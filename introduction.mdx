@@ -1,0 +1,80 @@
+---
+title: "What is Termux? Android terminal emulator overview"
+description: "Termux is a free Android terminal emulator and Linux environment. Install packages with apt and build a complete dev setup on Android without root access."
+---
+
+Termux is a free, open-source Android application that brings a full Linux-compatible terminal environment to your phone or tablet — no root required. It ships with a working shell, a `pkg`/`apt` package manager backed by thousands of packages, and a plugin ecosystem that extends the app with Android API access, home screen widgets, boot scripts, and more.
+
+## What is Termux?
+
+Termux combines a terminal emulator with a Linux environment that runs entirely inside Android's app sandbox. When you open Termux you get a bash shell, a `$HOME` directory in the app's private storage, and a `$PREFIX` (`/data/data/com.termux/files/usr`) that holds a self-contained set of Linux binaries compiled for Android. From there you can install compilers, interpreters, servers, and tools using `pkg install` exactly as you would with `apt` on Debian or Ubuntu.
+
+The environment does not require root access and works on any Android device running Android 7 or higher. Because Termux ships its own binaries rather than relying on the system's `/usr`, it provides a consistent Linux-like experience regardless of the Android version or device manufacturer.
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="Terminal emulator" icon="terminal">
+    Full VT100/xterm-compatible terminal emulation. Supports multiple concurrent sessions, each accessible from a slide-out drawer.
+  </Card>
+  <Card title="Package manager" icon="box">
+    `pkg` and `apt` give you access to thousands of packages — compilers, interpreters, databases, network tools, and more — without root.
+  </Card>
+  <Card title="No root required" icon="shield-check">
+    Runs entirely inside Android's app sandbox. Everything installs into Termux's private data directory; no system partition modifications are needed.
+  </Card>
+  <Card title="Storage access" icon="folder-open">
+    Run `termux-setup-storage` to create `~/storage` symlinks that give the terminal access to your Android shared storage and SD card.
+  </Card>
+  <Card title="SSH and remote access" icon="wifi">
+    Install OpenSSH to connect to remote servers or turn your Android device into an SSH server accessible from your workstation.
+  </Card>
+  <Card title="Android TV and Samsung DeX" icon="tv">
+    The manifest declares Leanback launcher support and Samsung DeX dual-mode metadata, so Termux runs on Android TV and desktop-mode displays.
+  </Card>
+</CardGroup>
+
+## App and plugins
+
+The core Termux app handles terminal emulation, session management, and package installation. Six optional plugin apps extend it with additional capabilities. All plugins communicate with the core app via Android intents and must be installed from the **same APK source** as Termux itself (F-Droid, GitHub, or Google Play) because they share the `com.termux` user ID and must be signed with the same key.
+
+<CardGroup cols={2}>
+  <Card title="Termux:API" icon="plug" href="https://github.com/termux/termux-api">
+    Exposes Android system APIs — camera, GPS, SMS, clipboard, notifications, and more — as command-line tools callable from shell scripts.
+  </Card>
+  <Card title="Termux:Boot" icon="power-off" href="https://github.com/termux/termux-boot">
+    Runs scripts automatically when the device boots. Place scripts in `~/.termux/boot/` and they execute on every startup.
+  </Card>
+  <Card title="Termux:Float" icon="window-restore" href="https://github.com/termux/termux-float">
+    Opens a floating terminal window that overlays other apps, useful for quick commands without leaving your current activity.
+  </Card>
+  <Card title="Termux:Styling" icon="palette" href="https://github.com/termux/termux-styling">
+    Provides colour schemes and fonts for the terminal. Change the appearance of the terminal from a built-in selection of themes.
+  </Card>
+  <Card title="Termux:Tasker" icon="bolt" href="https://github.com/termux/termux-tasker">
+    Integrates with the Tasker automation app to run Termux commands as part of Tasker tasks and profiles.
+  </Card>
+  <Card title="Termux:Widget" icon="grip" href="https://github.com/termux/termux-widget">
+    Adds Android home screen widgets that launch scripts or shortcuts directly from the launcher without opening the full terminal.
+  </Card>
+</CardGroup>
+
+## Important notices
+
+<Warning>
+**Android 12+ phantom process killing.** Android OS kills any processes beyond a limit of 32 phantom processes across all apps, and also terminates processes using excessive CPU. You may see `[Process completed (signal 9) - press Enter]` in the terminal even though you did not exit the shell. An option to disable this behaviour is available in Android 12L / Android 13. See [issue #2366](https://github.com/termux/termux-app/issues/2366) for workarounds and the related [Android issue tracker entry](https://issuetracker.google.com/u/1/issues/205156966).
+</Warning>
+
+<Warning>
+**Do not mix APK sources.** Termux and all its plugin apps use the shared user ID `com.termux` and must all be signed with the same key. APKs from F-Droid, GitHub, and Google Play are signed with different keys. Installing a plugin from a different source than the core app will result in errors such as `INSTALL_FAILED_UPDATE_INCOMPATIBLE` or `signatures do not match previously installed version`. If you want to switch sources, uninstall every Termux app and plugin first.
+</Warning>
+
+## Community
+
+The Termux community is active across several platforms. All community links are listed on the [Termux Wiki community page](https://wiki.termux.com/wiki/Community).
+
+- [Termux subreddit](https://reddit.com/r/termux) — questions, tips, and general discussion
+- [Matrix channel](https://matrix.to/#/#termux_termux:gitter.im) (bridged with [Gitter](https://gitter.im/termux/termux)) — real-time user chat
+- [Dev Matrix channel](https://matrix.to/#/#termux_dev:gitter.im) (bridged with [Gitter](https://gitter.im/termux/dev)) — contributor discussion
+- [Termux on X (Twitter)](https://twitter.com/termuxdevs) — announcements
+- [Termux Wiki](https://wiki.termux.com/wiki/) — comprehensive documentation, FAQ, and guides

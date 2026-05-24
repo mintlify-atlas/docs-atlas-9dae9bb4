@@ -1,0 +1,130 @@
+---
+title: 'Commit message format and version naming in Termux'
+description: 'Termux uses Conventional Commits with capitalised types. Learn the required format, allowed types, breaking change notation, and semantic versioning rules.'
+---
+
+Termux commit messages follow the [Conventional Commits](https://www.conventionalcommits.org) specification so that changelogs can be generated automatically by the [`create-conventional-changelog`](https://github.com/termux/create-conventional-changelog) script in the format required by [Keep a Changelog](https://github.com/olivierlacan/keep-a-changelog). Consistent commit messages are not a style preference — they are a build requirement, because the changelog generation and release tooling depend on them.
+
+## Commit message format
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Rules that apply to every commit:**
+
+- The first letter of `type` must be **capitalised**.
+- The first letter of `description` must be **capitalised**.
+- The `description` should be written in the **present tense** ("Fix crash" not "Fixed crash").
+- A **space after the colon** is required.
+- For a breaking change, add an **exclamation mark `!`** immediately before the colon. This causes the entry to be highlighted in the generated changelog.
+
+## Allowed types
+
+Only the types listed below may be used. They match the changelog headings exactly — do not abbreviate or use alternatives such as `add`, `fix`, or `chore`.
+
+| Type | When to use |
+|---|---|
+| `Added` | New features |
+| `Changed` | Changes in existing functionality |
+| `Deprecated` | Features that will be removed in a future release |
+| `Removed` | Features that have been removed |
+| `Fixed` | Bug fixes |
+| `Security` | Security vulnerability fixes |
+
+<Warning>
+Using a type not in the table above (e.g. `feat`, `fix`, `chore`, `docs`) will produce malformed changelog entries and may cause the changelog generation script to fail.
+</Warning>
+
+## Examples
+
+```
+Added: Add support for terminal cursor blink rate setting
+Fixed: Fix keyboard shortcut not working on Samsung devices
+Changed!: Change default back key behaviour to escape
+Fixed(terminal): Fix color rendering for 256-color palette
+Added|Fixed: Add foo feature and fix bar bug
+```
+
+The `scope` in parentheses is optional and can be any short label that identifies the affected component (e.g. `terminal`, `keyboard`, `bootstrap`).
+
+The `|` separator in the last example is the way to attribute a single commit to multiple types when the change genuinely addresses two categories.
+
+### What not to write
+
+<AccordionGroup>
+  <Accordion title="Wrong type casing">
+    ```
+    # Wrong — lowercase type
+    added: Add new extra for shell name
+    fix: Fix null pointer in TermuxService
+
+    # Correct
+    Added: Add new extra for shell name
+    Fixed: Fix null pointer in TermuxService
+    ```
+  </Accordion>
+  <Accordion title="Unsupported type keywords">
+    ```
+    # Wrong — types not in the allowed list
+    feat: Add background session support
+    chore: Update Gradle wrapper
+    docs: Fix README typo
+
+    # Correct
+    Added: Add background session support
+    Changed: Update Gradle wrapper version
+    Fixed: Fix README typo
+    ```
+  </Accordion>
+  <Accordion title="Past tense description">
+    ```
+    # Wrong — past tense
+    Fixed: Fixed crash when starting a new session
+
+    # Correct — present tense
+    Fixed: Fix crash when starting a new session
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Version naming
+
+The `versionName` in every `build.gradle` file in the Termux ecosystem must comply with [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html):
+
+```
+major.minor.patch(-prerelease)(+buildmetadata)
+```
+
+The build system validates this with a regex at compile time. If `versionName` does not match the spec, the Gradle build and the `attach_debug_apks_to_release` workflow will both fail.
+
+**Key rules:**
+
+- Always include the patch number: use `v0.1.0`, never `v0.1`.
+- Apply the same format when creating GitHub release tags.
+- Pre-release identifiers and build metadata are allowed: `v0.119.0-beta.1`, `v0.119.0+build.42`.
+
+The current `versionName` in `app/build.gradle` is `0.118.0` (`versionCode 118`). The `termux-shared` library publishes as version `0.118.0` via its Maven publication in `termux-shared/build.gradle`.
+
+## Contributing checklist
+
+Before opening a pull request, verify the following:
+
+<Steps>
+  <Step title="Use TermuxConstants for all shared values">
+    Paths, package names, intent actions, and intent extras must reference constants from `TermuxConstants` rather than being written as string literals. Pull requests with hardcoded values will not be accepted.
+  </Step>
+  <Step title="Update CHANGELOG files">
+    When modifying `termux-shared`, update the changelog in `termux-shared/`. When modifying the app, update the app's changelog.
+  </Step>
+  <Step title="Place shared code in the correct package">
+    Termux app and plugin specific classes belong under `com.termux.shared.termux`. General-purpose utilities that do not depend on Termux specifics should live outside that package.
+  </Step>
+  <Step title="Check the termux-shared licence">
+    The [`termux-shared` LICENSE](https://github.com/termux/termux-app/blob/master/termux-shared/LICENSE.md) must be reviewed and updated if you are introducing code with a different licence. The licences of any external libraries you add must also be honoured.
+  </Step>
+</Steps>

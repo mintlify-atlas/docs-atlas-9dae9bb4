@@ -1,0 +1,116 @@
+---
+title: "Termux:API — Android hardware access from the terminal"
+description: "Termux:API exposes Android device APIs as command-line tools, letting you read sensors, send notifications, take photos, and more from shell scripts."
+---
+
+Termux:API bridges the gap between the Linux terminal and the Android operating system. Once installed, it adds a set of `termux-*` commands that call Android APIs directly — so you can read GPS coordinates, send SMS messages, post notifications, control the camera, and interact with the clipboard entirely from shell scripts or the command line.
+
+## How it works
+
+Termux:API consists of two parts that must both be installed:
+
+1. **The Termux:API APK** — a background Android app that handles API calls and holds the necessary Android permissions.
+2. **The `termux-api` package** — a set of shell wrapper scripts installed via `pkg`, which send requests to the APK via Unix sockets.
+
+When you run a `termux-*` command in the terminal, the shell script passes the request to the APK, which uses Android APIs to fulfill it and returns the result to stdout.
+
+## Installation
+
+<Steps>
+  <Step title="Install the Termux:API APK">
+    Download and install the Termux:API APK from the **same source** as your main Termux app (F-Droid or GitHub). Open the app once after installing to register it.
+  </Step>
+  <Step title="Install the termux-api package">
+    In the Termux terminal, run:
+
+    ```bash
+    pkg install termux-api
+    ```
+  </Step>
+  <Step title="Grant permissions">
+    Android will prompt for permissions the first time you run a command that requires them (location, camera, contacts, etc.). You can also grant them in advance via **Android Settings → Apps → Termux:API → Permissions**.
+  </Step>
+</Steps>
+
+## Available commands
+
+The following commands are available after installing the `termux-api` package:
+
+| Command | Description |
+|---|---|
+| `termux-battery-status` | Returns battery level, temperature, health, and charging status as JSON |
+| `termux-camera-photo` | Takes a photo using a device camera and saves it to a file |
+| `termux-clipboard-get` | Prints the current clipboard contents to stdout |
+| `termux-clipboard-set` | Sets the clipboard to the provided text |
+| `termux-contact-list` | Lists all contacts on the device as JSON |
+| `termux-dialog` | Shows a dialog UI and returns the user's input |
+| `termux-location` | Returns current GPS or network location as JSON |
+| `termux-notification` | Posts an Android notification |
+| `termux-sensor` | Reads data from device sensors (accelerometer, gyroscope, etc.) |
+| `termux-sms-send` | Sends an SMS message to a phone number |
+| `termux-tts-speak` | Speaks text aloud using Android's text-to-speech engine |
+| `termux-vibrate` | Vibrates the device |
+| `termux-wifi-connectioninfo` | Returns current Wi-Fi connection details as JSON |
+
+## Usage examples
+
+Check battery status:
+
+```bash
+termux-battery-status
+```
+
+```json
+{
+  "health": "GOOD",
+  "percentage": 87,
+  "plugged": "UNPLUGGED",
+  "status": "DISCHARGING",
+  "temperature": 28.5
+}
+```
+
+Get current location and extract coordinates with `jq`:
+
+```bash
+termux-location | jq '{lat: .latitude, lon: .longitude}'
+```
+
+Post a notification from a script:
+
+```bash
+termux-notification \
+  --title "Backup complete" \
+  --content "Files synced successfully at $(date +%H:%M)"
+```
+
+Send text to the clipboard:
+
+```bash
+echo "Hello from Termux" | termux-clipboard-set
+termux-clipboard-get
+```
+
+Read accelerometer sensor data for 3 seconds:
+
+```bash
+termux-sensor -s "TYPE_ACCELEROMETER" -d 3000
+```
+
+## Permissions reference
+
+Each command requires specific Android permissions. They are requested at runtime when you first use a command:
+
+- **Location** — `termux-location`
+- **Camera** — `termux-camera-photo`
+- **Read contacts** — `termux-contact-list`
+- **Send SMS** — `termux-sms-send`
+- **Notifications** — `termux-notification` (on Android 13+)
+
+<Info>
+All `termux-*` commands output JSON by default. Pipe the output to `jq` for formatted or filtered results: `pkg install jq`.
+</Info>
+
+## Source code
+
+The Termux:API source is available at [github.com/termux/termux-api](https://github.com/termux/termux-api).

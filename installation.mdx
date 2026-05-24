@@ -1,0 +1,93 @@
+---
+title: "Install Termux on Android: F-Droid, GitHub, or Google Play"
+description: "Install Termux from F-Droid, GitHub Releases, or Google Play. Learn about APK signing key differences and which source is right for you."
+---
+
+Termux is distributed through three sources: F-Droid, GitHub, and the Google Play Store. Each source signs its APKs with a different key, which has an important consequence: Termux and every plugin app installed on your device must come from the same source. Mixing sources causes installation failures and prevents plugins from communicating with the core app.
+
+<Warning>
+APKs from different sources are signed with different keys. Termux and all its plugin apps (`Termux:API`, `Termux:Boot`, `Termux:Float`, `Termux:Styling`, `Termux:Tasker`, `Termux:Widget`) share the user ID `com.termux` and must all be installed from the same source. Installing from mixed sources produces errors like `INSTALL_FAILED_UPDATE_INCOMPATIBLE` or `signatures do not match previously installed version`. If you want to switch sources, [uninstall every Termux app and plugin](#uninstalling-termux) before reinstalling.
+</Warning>
+
+## Installation sources
+
+<Tabs>
+  <Tab title="F-Droid (recommended)">
+    F-Droid is the recommended source for most users. Builds are reproducible and published by F-Droid independently of the Termux maintainers.
+
+    1. Go to [f-droid.org/en/packages/com.termux](https://f-droid.org/en/packages/com.termux/).
+    2. Scroll to the version you want and click **Download APK**. You do not need to install the F-Droid app to download Termux — a direct APK download is available on the page.
+    3. Open the downloaded APK to install it. You may need to allow installation from unknown sources in your Android settings.
+
+    **Notes:**
+    - Only a universal APK is published. It works on all supported CPU architectures (arm64, arm, x86, x86_64). Installation size is approximately 180 MB.
+    - F-Droid releases typically appear a few days — sometimes a week or more — after the corresponding GitHub release. F-Droid builds and publishes independently; the Termux maintainers do not control timing or have access to the F-Droid signing key.
+    - The F-Droid app may not automatically notify you of updates. Open the **Updates** tab and pull down to refresh manually. Disable battery optimisation for the F-Droid app if updates are not appearing — see [dontkillmyapp.com](https://dontkillmyapp.com/) for device-specific instructions.
+  </Tab>
+  <Tab title="GitHub">
+    GitHub builds are useful when you need the latest features before an F-Droid release, or when you want architecture-specific APKs for a smaller download.
+
+    **From GitHub Releases (version >= 0.118.0):**
+    1. Go to [github.com/termux/termux-app/releases](https://github.com/termux/termux-app/releases).
+    2. Expand the **Assets** section of the release you want.
+    3. Download the correct APK variant for your device:
+       - **Android 7 and above:** download the `apt-android-7` variant.
+       - **Android 5 or 6:** download the `apt-android-5` variant (package updates are not supported on these versions).
+       - Choose a universal APK (~180 MB) or an architecture-specific APK (~120 MB) for `arm64-v8a`, `armeabi-v7a`, `x86_64`, or `x86`.
+
+    **From GitHub Actions (latest commits):**
+    1. Go to the [Build workflow runs](https://github.com/termux/termux-app/actions/workflows/debug_build.yml?query=branch%3Amaster+event%3Apush).
+    2. Click a workflow run and download the APK from the **Artifacts** section. You must be logged into a GitHub account for the artifact links to be active.
+
+    <Warning>
+    GitHub APKs are signed with a [shared test key](https://github.com/termux/termux-app/blob/master/app/testkey_untrusted.jks) that anyone can use to sign an APK. Only download GitHub builds directly from [github.com/termux/termux-app](https://github.com/termux/termux-app). Do not install Termux APKs distributed through Telegram, social media, or other third-party channels — they may be signed with the same test key and could be malicious.
+    </Warning>
+  </Tab>
+  <Tab title="Google Play (experimental)">
+    A Termux build is available on Google Play for **Android 11 and above**. It is under active development and currently has missing functionality and known bugs compared to the F-Droid release. Most users who can install from F-Droid or GitHub should do so instead.
+
+    The Google Play version is built from a separate repository at [github.com/termux-play-store](https://github.com/termux-play-store/). Report issues specific to the Play Store build in that repository's [issue tracker](https://github.com/termux-play-store/termux-issues/issues/new/choose), not in the main termux-app repository.
+
+    <Note>
+    Google Play may attempt to update an existing F-Droid installation to the Play Store version. This update will fail because the shared user ID configuration differs between the two builds. To prevent Google Play from attempting the update, open the Termux page in Google Play, tap the three-dot menu, and disable **Enable auto update**.
+    </Note>
+  </Tab>
+</Tabs>
+
+## System requirements
+
+| Requirement | Minimum |
+|-------------|---------|
+| Android version | 7.0 (API 24) for full app and package support |
+| Android version | 5.0–6.0 (API 21–23) for app only, via GitHub builds — no package updates |
+| Architecture | arm64-v8a, armeabi-v7a, x86_64, x86 |
+| Install location | Internal storage only (`android:installLocation="internalOnly"`) |
+
+<Info>
+Support for Android 5 and 6 was dropped in January 2020 at `v0.83` and re-added in May 2022 specifically for the GitHub source via the `apt-android-5` APK variant. Package repositories do not receive updates for Android 5/6 devices.
+</Info>
+
+## Installing plugins
+
+Install plugins only after you have installed the core Termux app, and only from the same source:
+
+- [Termux:API](https://github.com/termux/termux-api) — Android system API access from the shell
+- [Termux:Boot](https://github.com/termux/termux-boot) — run scripts on device boot
+- [Termux:Float](https://github.com/termux/termux-float) — floating terminal overlay
+- [Termux:Styling](https://github.com/termux/termux-styling) — colour schemes and fonts
+- [Termux:Tasker](https://github.com/termux/termux-tasker) — Tasker integration
+- [Termux:Widget](https://github.com/termux/termux-widget) — home screen shortcuts
+
+Each plugin is a separate APK available from the same F-Droid, GitHub, or Google Play source as the core app. Installing a plugin from a different source than the core app will fail.
+
+## Uninstalling Termux
+
+Before uninstalling — for example, to switch from F-Droid to GitHub builds — consider [backing up your Termux data](https://wiki.termux.com/wiki/Backing_up_Termux) so you can restore it after reinstalling.
+
+To completely remove Termux from your device:
+
+1. Go to **Android Settings** → **Applications**.
+2. Search for `termux` in the application list.
+3. Uninstall **every** app that appears: `Termux`, `Termux:API`, `Termux:Boot`, `Termux:Float`, `Termux:Styling`, `Termux:Tasker`, and `Termux:Widget`.
+
+Even if you believe you have not installed any plugins, check the full application list. Partial uninstallation leaves conflicting signed packages that will block a clean install from a new source.

@@ -1,0 +1,114 @@
+---
+title: "Package management with pkg and apt in Termux apps"
+description: "How to install, update, and remove packages in Termux using pkg and apt, including common packages, repository sources, and the bootstrap environment."
+---
+
+Termux ships with a minimal bootstrap environment that provides a working shell and the APT package manager. From there you can install any of the thousands of packages maintained in the [termux-packages](https://github.com/termux/termux-packages) repository, ranging from compilers and interpreters to editors and network tools.
+
+## pkg vs apt
+
+`pkg` is a wrapper around `apt` that adds a few conveniences: it automatically runs `apt update` before installing, provides shorter subcommand names, and handles some Termux-specific quirks. You can use either tool; `pkg` is recommended for interactive use because it reduces the number of commands needed for common operations.
+
+<Tabs>
+  <Tab title="pkg">
+    ```bash
+    pkg update              # refresh the package index
+    pkg upgrade             # upgrade all installed packages
+    pkg install <name>      # install a package
+    pkg uninstall <name>    # remove a package
+    pkg search <query>      # search for packages by name or description
+    pkg list-installed      # list all installed packages
+    pkg show <name>         # show package metadata
+    ```
+  </Tab>
+  <Tab title="apt">
+    ```bash
+    apt update
+    apt upgrade
+    apt install <name>
+    apt remove <name>
+    apt search <query>
+    apt list --installed
+    apt show <name>
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  Always run `pkg update` or `apt update` before installing new packages. Package lists can become stale, causing "unable to locate package" errors.
+</Note>
+
+## Common packages
+
+<CardGroup cols={2}>
+  <Card title="Languages and runtimes" icon="code">
+    `python`, `nodejs`, `ruby`, `perl`, `lua54`
+  </Card>
+  <Card title="Development tools" icon="wrench">
+    `gcc`, `clang`, `make`, `cmake`, `binutils`
+  </Card>
+  <Card title="Version control" icon="git-branch">
+    `git`, `gh` (GitHub CLI)
+  </Card>
+  <Card title="Editors" icon="pencil">
+    `vim`, `neovim`, `nano`, `emacs`
+  </Card>
+  <Card title="Network and remote access" icon="network">
+    `openssh`, `curl`, `wget`, `nmap`, `netcat`
+  </Card>
+  <Card title="Shells" icon="terminal">
+    `bash`, `zsh`, `fish`, `dash`
+  </Card>
+</CardGroup>
+
+Install multiple packages in a single command:
+
+```bash
+pkg install git vim openssh python
+```
+
+## Package repositories and sources
+
+Termux packages are hosted across several repositories. The main repository contains the majority of packages. Additional repositories exist for specific categories:
+
+| Repository | Contents |
+|------------|----------|
+| `stable` (default) | Core Termux packages |
+| `x11` | X11-based graphical packages |
+| `root` | Packages requiring root access |
+
+Repository sources are listed in `$PREFIX/etc/apt/sources.list`. Additional per-repository files live in `$PREFIX/etc/apt/sources.list.d/`. You can inspect and edit these files directly, or use `pkg` to manage them.
+
+<Warning>
+  Do not mix packages from different Termux installation sources (F-Droid, GitHub, Google Play). All installed APKs — including plugin apps — must come from the same source because they share a `sharedUserId` and must be signed with the same key.
+</Warning>
+
+## The bootstrap environment
+
+When Termux starts for the first time (or after the prefix directory is absent), it automatically extracts a bootstrap zip into `$PREFIX` (`/data/data/com.termux/files/usr`). This zip is bundled with the APK and provides the minimal environment needed to run `apt` and start a shell. The bootstrap packages themselves are built and released from the [termux/termux-packages](https://github.com/termux/termux-packages) repository.
+
+Once the bootstrap is installed, use `pkg upgrade` to bring all bootstrap packages up to date:
+
+```bash
+pkg update && pkg upgrade
+```
+
+## Finding available packages
+
+Search for packages by name or keywords:
+
+```bash
+pkg search python      # packages with "python" in the name or description
+pkg search "text editor"
+```
+
+Browse the full package list on GitHub at [github.com/termux/termux-packages](https://github.com/termux/termux-packages). Each package directory contains a `build.sh` file with version info and a description.
+
+## Removing packages
+
+```bash
+pkg uninstall vim          # remove a package but keep its configuration
+apt remove --purge vim     # remove a package and its configuration files
+apt autoremove             # remove packages that were installed as dependencies
+                           # and are no longer needed
+```

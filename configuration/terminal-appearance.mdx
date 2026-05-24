@@ -1,0 +1,213 @@
+---
+title: "Terminal appearance: colors, cursor, font, and margins"
+description: "Customize the Termux terminal's look with dark mode, cursor style, margins, scrollback, fonts, and 16-color themes via colors.properties."
+---
+
+Termux exposes several properties that control how the terminal looks — from the overall color theme and cursor shape to padding, scrollback depth, and toolbar size. You set most of these in `~/.termux/termux.properties`, while fonts and color palettes live in dedicated files under `~/.termux/`. Reload settings after any change via the Termux notification or by restarting the app.
+
+---
+
+## Night mode
+
+The `night-mode` property sets the overall app theme.
+
+| Value | Behavior |
+|-------|----------|
+| `system` | Follow the Android system dark/light mode setting **(default)** |
+| `true` | Always use the dark theme |
+| `false` | Always use the light theme |
+
+```properties
+night-mode=system
+```
+
+<Note>
+The deprecated `use-black-ui` property previously forced a pure-black OLED-friendly theme. Use `night-mode=true` instead.
+</Note>
+
+---
+
+## Cursor style
+
+The `terminal-cursor-style` property sets the shape of the text insertion cursor.
+
+| Value | Appearance |
+|-------|-----------|
+| `block` | Filled rectangle over the current character **(default)** |
+| `underline` | Thin line drawn under the current character |
+| `bar` | Vertical bar to the left of the current character |
+
+```properties
+terminal-cursor-style=bar
+```
+
+---
+
+## Cursor blink rate
+
+The `terminal-cursor-blink-rate` property sets the cursor blink interval in milliseconds.
+
+- **Default:** `0` (blinking disabled)
+- **Valid range:** `0`, or `100`–`2000`
+
+Setting any value outside the valid non-zero range disables blinking and logs an error.
+
+```properties
+# Blink roughly twice per second
+terminal-cursor-blink-rate=600
+```
+
+<Tip>
+A blink rate around `500`–`800` ms is comfortable for most users. Set to `0` to keep the cursor always visible without blinking.
+</Tip>
+
+---
+
+## Terminal margins
+
+Two properties control the padding between the terminal text and the edges of the screen, both in density-independent pixels (dp).
+
+### Horizontal margin
+
+Left and right padding:
+
+- **Property:** `terminal-margin-horizontal`
+- **Default:** `3`
+- **Range:** `0`–`100`
+
+```properties
+terminal-margin-horizontal=8
+```
+
+### Vertical margin
+
+Top and bottom padding:
+
+- **Property:** `terminal-margin-vertical`
+- **Default:** `0`
+- **Range:** `0`–`100`
+
+```properties
+terminal-margin-vertical=4
+```
+
+---
+
+## Toolbar height
+
+The `terminal-toolbar-height` property scales the height of the extra keys toolbar. The value is a multiplier applied to the default height.
+
+- **Default:** `1.0`
+- **Range:** `0.4`–`3.0`
+
+```properties
+# Make the toolbar 50% taller than default
+terminal-toolbar-height=1.5
+```
+
+Setting this below `1.0` shrinks the toolbar and may make buttons harder to tap. Values above `2.0` work well for large-screen devices or when using many key rows.
+
+---
+
+## Scrollback rows
+
+The `terminal-transcript-rows` property sets how many lines Termux keeps in memory above the visible area for scrolling back through output.
+
+- **Default:** `2000`
+- **Range:** `100`–`50000`
+
+```properties
+terminal-transcript-rows=5000
+```
+
+<Warning>
+Very large scrollback buffers (above ~10 000) increase memory usage. On memory-constrained devices this can cause Termux to be killed by Android's low-memory killer.
+</Warning>
+
+---
+
+## Terminal colors
+
+Create or edit `~/.termux/colors.properties` to customize the 16 ANSI terminal colors. The file uses Java `.properties` format with color names as keys and hex color values (with `#`) as values.
+
+### Color names
+
+```properties
+background=#1e1e2e
+foreground=#cdd6f4
+cursor=#f5e0dc
+
+# Normal colors (0-7)
+color0=#45475a
+color1=#f38ba8
+color2=#a6e3a1
+color3=#f9e2af
+color4=#89b4fa
+color5=#f5c2e7
+color6=#94e2d5
+color7=#bac2de
+
+# Bright colors (8-15)
+color8=#585b70
+color9=#f38ba8
+color10=#a6e3a1
+color11=#f9e2af
+color12=#89b4fa
+color13=#f5c2e7
+color14=#94e2d5
+color15=#a6adc8
+```
+
+<Tip>
+Many popular terminal color schemes (Catppuccin, Dracula, Solarized, Nord, etc.) publish ready-made `colors.properties` files. Check the [Termux:Styling](https://github.com/termux/termux-styling) plugin for a GUI color picker and font manager.
+</Tip>
+
+After saving `colors.properties`, reload settings from the Termux notification drawer or run:
+
+```bash
+# Reload with termux-reload-settings (from termux-tools package)
+termux-reload-settings
+```
+
+---
+
+## Custom font
+
+Place a TrueType font file at `~/.termux/font.ttf` to replace the default monospace font. Termux will use it automatically after reloading settings.
+
+```bash
+# Example: copy a Nerd Font for icon support in tools like lsd or starship
+cp ~/storage/downloads/JetBrainsMono.ttf ~/.termux/font.ttf
+termux-reload-settings
+```
+
+<Note>
+Only TTF files are supported. The font must be a monospace typeface; proportional fonts will cause alignment issues in the terminal.
+</Note>
+
+For a GUI interface to manage fonts and colors, install the **Termux:Styling** plugin from F-Droid. It provides a built-in browser for Nerd Fonts and preset color themes that write directly to `~/.termux/font.ttf` and `~/.termux/colors.properties`.
+
+---
+
+## Configuration directory layout
+
+```
+~/.termux/
+├── termux.properties   # Main settings file
+├── colors.properties   # 16-color ANSI palette
+└── font.ttf            # Custom monospace font (optional)
+```
+
+---
+
+## Quick reference
+
+| Property | Default | Range / Values |
+|----------|---------|----------------|
+| `night-mode` | `system` | `system` \| `true` \| `false` |
+| `terminal-cursor-style` | `block` | `block` \| `underline` \| `bar` |
+| `terminal-cursor-blink-rate` | `0` | `0`, or `100`–`2000` ms |
+| `terminal-margin-horizontal` | `3` | `0`–`100` dp |
+| `terminal-margin-vertical` | `0` | `0`–`100` dp |
+| `terminal-toolbar-height` | `1.0` | `0.4`–`3.0` |
+| `terminal-transcript-rows` | `2000` | `100`–`50000` |

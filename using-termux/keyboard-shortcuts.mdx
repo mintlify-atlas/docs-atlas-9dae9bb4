@@ -1,0 +1,165 @@
+---
+title: "Keyboard shortcuts and the configurable extra keys bar"
+description: "How Termux maps the Volume Down and Volume Up keys as virtual Ctrl and Fn modifiers, hardware keyboard shortcuts, and how to configure the extra keys bar."
+---
+
+Termux runs on devices that may not have a physical keyboard with Ctrl, Escape, Tab, or function keys. To compensate, the Volume Down key acts as a virtual Ctrl modifier and the Volume Up key acts as a virtual Fn modifier, giving you access to keys that are common in terminal workflows without requiring a hardware keyboard. These virtual key bindings are active by default and can be disabled by setting `volume-keys=volume` in `~/.termux/termux.properties`.
+
+## Volume Down as Ctrl
+
+Pressing Volume Down while typing a letter sends that letter as a Ctrl combination. These are the most commonly used mappings:
+
+| Combination | Equivalent | Common use |
+|-------------|-----------|------------|
+| Volume Down + C | Ctrl+C | Interrupt the running process (SIGINT) |
+| Volume Down + D | Ctrl+D | Send EOF / exit the shell |
+| Volume Down + Z | Ctrl+Z | Suspend the foreground process (SIGTSTP) |
+| Volume Down + L | Ctrl+L | Clear the screen |
+| Volume Down + A | Ctrl+A | Move to beginning of line (readline) |
+| Volume Down + E | Ctrl+E | Move to end of line (readline) |
+| Volume Down + K | Ctrl+K | Kill to end of line (readline) |
+| Volume Down + U | Ctrl+U | Kill to beginning of line (readline) |
+| Volume Down + W | Ctrl+W | Delete previous word (readline) |
+| Volume Down + R | Ctrl+R | Reverse history search (readline) |
+
+Volume Down applies the Ctrl modifier to any letter you type next, so the full range of Ctrl+[A–Z] combinations is available.
+
+## Volume Up as Fn
+
+The Volume Up key provides access to special keys that cannot easily be typed on a touch keyboard:
+
+<AccordionGroup>
+  <Accordion title="Special keys">
+
+    | Combination | Sends |
+    |-------------|-------|
+    | Volume Up + E | Escape |
+    | Volume Up + T | Tab |
+    | Volume Up + I | Insert |
+    | Volume Up + H | `~` (tilde) |
+    | Volume Up + . | Ctrl+\\ (SIGQUIT) |
+
+  </Accordion>
+  <Accordion title="Function keys">
+
+    | Combination | Sends |
+    |-------------|-------|
+    | Volume Up + 1 | F1 |
+    | Volume Up + 2 | F2 |
+    | Volume Up + 3 | F3 |
+    | Volume Up + 4 | F4 |
+    | Volume Up + 5 | F5 |
+    | Volume Up + 6 | F6 |
+    | Volume Up + 7 | F7 |
+    | Volume Up + 8 | F8 |
+    | Volume Up + 9 | F9 |
+    | Volume Up + 0 | F10 |
+
+  </Accordion>
+  <Accordion title="Navigation keys">
+
+    | Combination | Sends |
+    |-------------|-------|
+    | Volume Up + W | Up arrow |
+    | Volume Up + A | Left arrow |
+    | Volume Up + S | Down arrow |
+    | Volume Up + D | Right arrow |
+    | Volume Up + P | Page Up |
+    | Volume Up + N | Page Down |
+
+  </Accordion>
+  <Accordion title="Characters and readline word movement">
+
+    | Combination | Sends |
+    |-------------|-------|
+    | Volume Up + L | `\|` (pipe) |
+    | Volume Up + U | `_` (underscore) |
+    | Volume Up + B | Alt+B (move back one word in readline) |
+    | Volume Up + F | Alt+F (move forward one word in readline) |
+    | Volume Up + X | Alt+X |
+
+  </Accordion>
+  <Accordion title="UI toggles">
+
+    | Combination | Action |
+    |-------------|--------|
+    | Volume Up + Q or Volume Up + K | Toggle the extra keys toolbar |
+    | Volume Up + V | Show the system volume control UI |
+
+  </Accordion>
+</AccordionGroup>
+
+## Hardware keyboard shortcuts
+
+When a physical keyboard is attached, Termux recognizes **Ctrl+Alt** combinations for session and UI management. These shortcuts are enabled by default and can be disabled by setting `disable-hardware-keyboard-shortcuts=true` in `~/.termux/termux.properties`.
+
+| Shortcut | Action |
+|----------|--------|
+| Ctrl+Alt+C | Create a new session |
+| Ctrl+Alt+N or Ctrl+Alt+Down | Switch to next session |
+| Ctrl+Alt+P or Ctrl+Alt+Up | Switch to previous session |
+| Ctrl+Alt+[1–9] | Switch directly to session 1–9 |
+| Ctrl+Alt+R | Rename the current session |
+| Ctrl+Alt+U | Show URL selection dialog |
+| Ctrl+Alt+V | Paste from clipboard |
+| Ctrl+Alt+K | Toggle the soft keyboard |
+| Ctrl+Alt+M | Open the context menu |
+| Ctrl+Alt+Right | Open the session list drawer |
+| Ctrl+Alt+Left | Close the session list drawer |
+| Ctrl+Alt++ | Increase font size |
+| Ctrl+Alt+- | Decrease font size |
+
+<Note>
+  Termux does not steal Ctrl+Alt shortcuts from a connected alphabetic hardware keyboard (i.e. a full external keyboard). Volume key virtual mappings are also skipped for alphabetic hardware keyboards so the physical keys work as normal media keys.
+</Note>
+
+## Configurable session shortcuts
+
+You can assign Ctrl key combinations to session management actions using `~/.termux/termux.properties`:
+
+```properties
+# Use Ctrl+1 to create a new session
+shortcut.create-session=1
+
+# Use Ctrl+2 / Ctrl+3 to cycle through sessions
+shortcut.next-session=2
+shortcut.previous-session=3
+
+# Use Ctrl+4 to rename the current session
+shortcut.rename-session=4
+```
+
+These work from the soft keyboard via the Volume Down (Ctrl) modifier as well as from hardware keyboards.
+
+## The extra keys bar
+
+The extra keys bar is a configurable row of buttons displayed above the soft keyboard. It provides one-tap access to keys like Escape, Tab, Ctrl, arrow keys, and common symbols that would otherwise require the volume key workarounds.
+
+Toggle the extra keys bar by:
+- Long-pressing the keyboard toggle button in the session drawer.
+- Pressing **Volume Up + Q** or **Volume Up + K**.
+- Long-pressing the keyboard icon in the drawer.
+
+### Default extra keys layout
+
+The default layout (from `TermuxPropertyConstants.java`) provides two rows:
+
+```
+ESC  /  -|  HOME  ↑  END  PgUp
+TAB  CTRL  ALT  ←  ↓  →  PgDn
+```
+
+Where `-|` is a key that shows `-` and has `|` (pipe) as a popup on long-press.
+
+### Customizing the extra keys bar
+
+Edit `~/.termux/termux.properties` and set `extra-keys` to a JSON-style array of key rows. Each entry is a key name (uppercase) or a popup object:
+
+```properties
+extra-keys = [['ESC','TAB','CTRL','ALT','LEFT','DOWN','UP','RIGHT'], \
+              ['F1','F2','F3','F4','F5','F6',{key: '-', popup: '|'},'BKSP']]
+```
+
+Supported key names include: `ESC`, `TAB`, `CTRL`, `ALT`, `SHIFT`, `FN`, `UP`, `DOWN`, `LEFT`, `RIGHT`, `HOME`, `END`, `PGUP`, `PGDN`, `INS`, `DEL`, `BKSP`, `ENTER`, `F1`–`F12`, `SPACE`, `DRAWER`, `KEYBOARD`, `PASTE`, and any literal character.
+
+Use `extra-keys-text-all-caps=false` to display key labels in lowercase. Adjust the row height with `terminal-toolbar-height` (a float scale factor, default `1.0`).

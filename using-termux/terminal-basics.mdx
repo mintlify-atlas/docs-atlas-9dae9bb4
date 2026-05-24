@@ -1,0 +1,93 @@
+---
+title: "Terminal basics: sessions, gestures, and navigation"
+description: "Learn how to open and navigate the Termux terminal, manage multiple sessions, use touch gestures, select and copy text, and work with the session drawer."
+---
+
+Termux opens directly into a terminal emulator backed by a persistent foreground service. Each terminal window runs a shell process (bash by default), and you can have multiple independent sessions running side by side without stopping existing processes when you switch away.
+
+## Opening the terminal
+
+Launch Termux from the app drawer. On first run, the bootstrap environment is installed automatically — a minimal set of packages that provides a working shell, `apt`, and core utilities. Once that completes, you land at a shell prompt inside your home directory (`/data/data/com.termux/files/home`).
+
+Tap anywhere on the terminal to show the soft keyboard. Tapping while the keyboard is already visible keeps it visible and moves the cursor; tapping while it is hidden shows it again.
+
+## Multiple sessions
+
+Termux supports running several shell sessions at the same time. Each session is independent: you can compile code in one session while running a server in another.
+
+<Steps>
+  <Step title="Open a new session">
+    Swipe in from the left edge of the screen to open the session drawer, then tap the **+** (new session) button. You can also long-press the **+** button to give the session a name, or to start a failsafe session.
+  </Step>
+  <Step title="Switch between sessions">
+    Swipe in from the left edge to reveal the session list and tap any session to switch to it. A toast notification briefly shows the session name when you switch.
+  </Step>
+  <Step title="Close a session">
+    Type `exit` in the shell, or long-press the terminal to open the context menu and choose **Kill process** to terminate the running process immediately.
+  </Step>
+</Steps>
+
+<Tip>
+  If you have a hardware keyboard, use **Ctrl+Alt+N** to create a new session and **Ctrl+Alt+P** / **Ctrl+Alt+Down** or **Ctrl+Alt+[1–9]** to switch sessions without opening the drawer.
+</Tip>
+
+## The session list drawer
+
+Swipe right from the left edge of the terminal to open the session list drawer. The drawer shows all currently open sessions, a **+** button to create a new one, a keyboard toggle button, and a settings button.
+
+- Tap a session in the list to switch to it.
+- Long-press a session in the list to rename it.
+- Tap the keyboard icon to toggle the soft keyboard.
+- Long-press the keyboard icon to toggle the extra keys bar.
+
+## Touch gestures
+
+<AccordionGroup>
+  <Accordion title="Two-finger pinch to zoom">
+    Pinch in or out on the terminal with two fingers to decrease or increase the font size. The change persists across restarts.
+  </Accordion>
+  <Accordion title="Single tap">
+    Tapping the terminal shows the soft keyboard if it is not already visible. When `terminal-onclick-url-open` is enabled in `~/.termux/termux.properties`, tapping a detected URL opens it in the default browser instead.
+  </Accordion>
+  <Accordion title="Long-press for context menu">
+    Long-pressing the terminal surface opens the context menu. Options include selecting URLs, sharing the transcript, resetting or killing the session, opening styling options, toggling keep-screen-on, and accessing settings or help.
+  </Accordion>
+  <Accordion title="Swipe from left edge">
+    Swipe inward from the very left edge of the screen to reveal the session list drawer. Swipe back or tap the terminal area to close it.
+  </Accordion>
+</AccordionGroup>
+
+## Text selection and copy/paste
+
+To select text, long-press and drag on the terminal. Selection handles appear once text is highlighted. While in selection mode:
+
+- The session drawer is locked closed to prevent accidental navigation.
+- Use **Share selected text** from the context menu (long-press while text is selected) to share the highlighted content.
+- To paste clipboard content, open the context menu and choose the paste option, or use the extra keys bar if it has a PASTE key configured.
+
+<Note>
+  Paste is also available via the **Ctrl+Alt+V** hardware keyboard shortcut.
+</Note>
+
+## URL detection
+
+Termux scans the visible terminal transcript for URLs. There are two ways to interact with detected URLs:
+
+- **Tap to open** — when `terminal-onclick-url-open=true` is set in `~/.termux/termux.properties`, tapping a URL in the terminal opens it immediately in the default browser.
+- **Context menu → Select URL** — long-press the terminal to open the context menu, then choose **Select URL** to see a list of all URLs found in the current transcript. Tap a URL to copy it to the clipboard; long-press a URL in the list to open it in the browser.
+
+## Bell notification behavior
+
+When a program sends the terminal bell character (BEL, `\a`), Termux can respond in three ways. Configure the behavior by setting `bell-character` in `~/.termux/termux.properties`:
+
+| Value | Behavior |
+|-------|----------|
+| `vibrate` (default) | Vibrate the device |
+| `beep` | Play an audible beep |
+| `ignore` | Do nothing |
+
+## Terminal transcript (scrollback)
+
+Termux maintains a scrollback buffer so you can review earlier output. Scroll up with a single finger to read older lines. The buffer size is configurable via the `terminal-transcript-rows` property in `~/.termux/termux.properties`, with a minimum of 100 rows and an upper limit enforced by the terminal emulator.
+
+To share the full transcript (everything in the buffer), long-press the terminal and choose **Share transcript** from the context menu. The transcript is also used when Termux scans for URLs via the **Select URL** option.

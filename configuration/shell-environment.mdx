@@ -1,0 +1,201 @@
+---
+title: "Shell environment, variables, and default shell in Termux"
+description: "Configure the default shell, environment variables, startup files, working directory, and alternative shells like zsh and fish in Termux."
+---
+
+Termux ships with `bash` as the default shell and pre-sets a small number of environment variables that every session inherits. You can change the default shell, customize the startup environment through standard shell init files, and control session behavior — such as the starting directory and temporary file cleanup — through `termux.properties`. This page covers all of these topics.
+
+---
+
+## Environment variables
+
+Every Termux session starts with the following environment variables pre-defined:
+
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `$HOME` | `/data/data/com.termux/files/home` | Your Termux home directory |
+| `$PREFIX` | `/data/data/com.termux/files/usr` | The Termux package prefix (equivalent to `/usr` on a standard Linux system) |
+| `$TMPDIR` | `/data/data/com.termux/files/usr/tmp` | Temporary file storage |
+| `$LANG` | `en_US.UTF-8` | Default locale |
+| `$TERM` | `xterm-256color` | Terminal emulator type advertised to programs |
+
+<Note>
+These paths are hardcoded into compiled Termux binaries and cannot be changed without rebuilding the packages. Scripts that rely on `$HOME` and `$PREFIX` work correctly across all Termux installations.
+</Note>
+
+You can inspect or extend the environment from any session:
+
+```bash
+printenv | grep -E 'HOME|PREFIX|TMPDIR|LANG|TERM'
+```
+
+---
+
+## Default shell
+
+Termux uses `bash` out of the box, installed as part of the bootstrap package. The active login shell is stored in `/data/data/com.termux/files/usr/etc/passwd`.
+
+### Changing the default shell
+
+Install the shell you want, then use `chsh` to set it as the default:
+
+<Steps>
+  <Step title="Install the new shell">
+    ```bash
+    # zsh
+    pkg install zsh
+
+    # fish
+    pkg install fish
+
+    # tcsh
+    pkg install tcsh
+    ```
+  </Step>
+  <Step title="Set the default shell">
+    ```bash
+    chsh -s $(which zsh)
+    ```
+
+    This updates `/data/data/com.termux/files/usr/etc/passwd`. The change takes effect when you open a new session.
+  </Step>
+  <Step title="Verify">
+    ```bash
+    echo $SHELL
+    # /data/data/com.termux/files/usr/bin/zsh
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+To revert to `bash`, run `chsh -s $(which bash)`.
+</Tip>
+
+### Available shells
+
+```bash
+pkg search shell | grep -v python
+```
+
+Popular choices available via `pkg`:
+
+| Shell | Install command | Notes |
+|-------|-----------------|-------|
+| `bash` | pre-installed | Default; extensive scripting support |
+| `zsh` | `pkg install zsh` | Rich completion, Oh My Zsh compatible |
+| `fish` | `pkg install fish` | User-friendly, auto-suggestions built in |
+| `tcsh` | `pkg install tcsh` | C-shell variant |
+| `dash` | `pkg install dash` | Minimal POSIX shell, fast for scripts |
+
+---
+
+## Shell initialization files
+
+Termux shells respect standard init files located under `$HOME`. These are the same files used on any Linux system:
+
+<AccordionGroup>
+  <Accordion title="~/.bashrc">
+    Sourced for every interactive non-login bash session. This is the right place for aliases, functions, and prompt customization.
+
+    ```bash
+    # ~/.bashrc
+    export EDITOR=nano
+    alias ll='ls -la'
+    alias py=python3
+    ```
+  </Accordion>
+  <Accordion title="~/.bash_profile">
+    Sourced once for login shells. Use this for environment variable exports and one-time setup. It should source `~/.bashrc` to ensure aliases are available:
+
+    ```bash
+    # ~/.bash_profile
+    [[ -f ~/.bashrc ]] && source ~/.bashrc
+    export PATH="$HOME/bin:$PATH"
+    ```
+  </Accordion>
+  <Accordion title="~/.profile">
+    Generic POSIX sh init file, sourced by bash as a fallback if `~/.bash_profile` does not exist. Used by other shells too.
+  </Accordion>
+  <Accordion title="~/.zshrc (zsh)">
+    Sourced for every interactive zsh session. The main configuration file when using zsh.
+
+    ```bash
+    # ~/.zshrc
+    autoload -Uz compinit && compinit
+    export EDITOR=nano
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Default working directory
+
+New terminal sessions start in `$HOME` by default. Change the starting directory with the `default-working-directory` property in `~/.termux/termux.properties`:
+
+```properties
+default-working-directory=/data/data/com.termux/files/home/projects
+```
+
+The path must exist; if it does not, Termux falls back to `$HOME`.
+
+---
+
+## Temporary file cleanup
+
+Termux can automatically delete old files from `$TMPDIR` when the app exits. Control this with `delete-tmpdir-files-older-than-x-days-on-exit` in `~/.termux/termux.properties`:
+
+```properties
+# Delete files in $TMPDIR older than 3 days on exit (default)
+delete-tmpdir-files-older-than-x-days-on-exit=3
+```
+
+| Value | Behavior |
+|-------|----------|
+| `-1` | Never delete any files |
+| `0` | Delete all files in `$TMPDIR` on every exit |
+| `N` (positive) | Delete files with an access time older than N days |
+
+The valid range is `-1` to `100000`.
+
+---
+
+## termux-am socket server
+
+When `run-termux-am-socket-server=true` (the default), Termux starts a Unix socket server at app launch that enables the `am` (Android activity manager) command to work from within Termux sessions. This allows scripts to start Android activities, send broadcasts, and interact with the Android system from the terminal.
+
+```properties
+# termux.properties
+run-termux-am-socket-server=true
+```
+
+Disable this if you do not use `am` commands and want to reduce background resource usage:
+
+```properties
+run-termux-am-socket-server=false
+```
+
+---
+
+## allow-external-apps
+
+The `allow-external-apps` property enables third-party Android apps to run commands inside Termux via the `RUN_COMMAND` intent. It defaults to `false` for security.
+
+```properties
+allow-external-apps=false
+```
+
+<Warning>
+Enabling `allow-external-apps=true` allows any app that holds the `com.termux.permission.RUN_COMMAND` permission to execute arbitrary shell commands in your Termux environment with your user's privileges. Only enable this if you explicitly need it for a trusted automation app such as Tasker with Termux:Tasker.
+</Warning>
+
+---
+
+## Quick reference
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `default-working-directory` | `$HOME` | Starting directory for new sessions |
+| `delete-tmpdir-files-older-than-x-days-on-exit` | `3` | Days before `$TMPDIR` files are purged on exit |
+| `run-termux-am-socket-server` | `true` | Start the `termux-am` socket on launch |
+| `allow-external-apps` | `false` | Allow external apps to run commands via intent |

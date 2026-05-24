@@ -1,0 +1,107 @@
+---
+title: "Termux:Widget — home screen shortcuts for scripts"
+description: "Termux:Widget adds Android home screen widgets that launch shell scripts with one tap, giving you quick access to terminal tasks without opening Termux."
+---
+
+Termux:Widget lets you place Android home screen widgets that run your shell scripts with a single tap. You write scripts, put them in the right directory, then add a widget to your home screen — no terminal session needed each time. It's useful for quick tasks like checking your IP address, toggling a VPN, syncing files, or any command you run repeatedly.
+
+## Widget types
+
+Termux:Widget provides two widget types:
+
+- **Shortcuts widget** — Opens the Termux terminal and runs the script in a visible session. Output appears in the terminal.
+- **Scripts widget (tasks)** — Runs the script silently in the background without opening the terminal.
+
+Scripts for the shortcuts widget go in `~/.shortcuts/`. Scripts for the silent background widget go in `~/.shortcuts/tasks/`.
+
+## Setup
+
+<Steps>
+  <Step title="Install the Termux:Widget APK">
+    Download and install the Termux:Widget APK from the **same source** as your Termux app (F-Droid or GitHub).
+  </Step>
+  <Step title="Create the shortcuts directory">
+    In the Termux terminal:
+
+    ```bash
+    mkdir -p ~/.shortcuts
+    mkdir -p ~/.shortcuts/tasks
+    ```
+  </Step>
+  <Step title="Create a script">
+    Write a script and make it executable:
+
+    ```bash
+    cat > ~/.shortcuts/check-ip.sh << 'EOF'
+    #!/data/data/com.termux/files/usr/bin/bash
+    curl ifconfig.me
+    EOF
+    chmod +x ~/.shortcuts/check-ip.sh
+    ```
+  </Step>
+  <Step title="Add the widget to your home screen">
+    Long-press an empty area on your Android home screen, tap **Widgets**, scroll to find **Termux**, and drag the widget onto your home screen. The widget will display all scripts it finds in the shortcuts directory.
+  </Step>
+</Steps>
+
+## Creating shortcuts
+
+Scripts in `~/.shortcuts/` appear in the shortcuts widget and open a Termux terminal when tapped:
+
+```bash
+mkdir -p ~/.shortcuts
+
+# Check public IP address
+cat > ~/.shortcuts/check-ip.sh << 'EOF'
+#!/data/data/com.termux/files/usr/bin/bash
+curl ifconfig.me
+EOF
+chmod +x ~/.shortcuts/check-ip.sh
+
+# Sync files with rsync
+cat > ~/.shortcuts/sync.sh << 'EOF'
+#!/data/data/com.termux/files/usr/bin/bash
+rsync -av ~/projects/ user@server:~/projects/
+EOF
+chmod +x ~/.shortcuts/sync.sh
+```
+
+## Creating silent background tasks
+
+Scripts in `~/.shortcuts/tasks/` run silently without opening the terminal. Use this for commands where you don't need to see output:
+
+```bash
+mkdir -p ~/.shortcuts/tasks
+
+# Toggle Wi-Fi (requires root or ADB)
+cat > ~/.shortcuts/tasks/toggle-vpn.sh << 'EOF'
+#!/data/data/com.termux/files/usr/bin/bash
+wg-quick up wg0
+EOF
+chmod +x ~/.shortcuts/tasks/toggle-vpn.sh
+```
+
+<Note>
+Script filenames are used as widget labels. Use descriptive names without underscores for cleaner display — for example, `check-ip.sh` appears as "check-ip" in the widget.
+</Note>
+
+## Refreshing the widget
+
+The widget reads the `~/.shortcuts/` directory each time it is added or updated. If you add new scripts and they don't appear, remove the widget from your home screen and add it again.
+
+## Other display plugins
+
+Two additional plugins complement the Termux experience on the Android home screen and system UI:
+
+<CardGroup cols={2}>
+  <Card title="Termux:Float" icon="window-restore" href="https://github.com/termux/termux-float">
+    Opens a floating terminal window that overlays on top of any running app. Useful for quick commands without switching away from what you're doing.
+  </Card>
+  <Card title="Termux:Styling" icon="palette" href="https://github.com/termux/termux-styling">
+    Adds a color scheme and font picker to Termux. Choose from a range of built-in themes and monospace fonts to customize the terminal's appearance.
+  </Card>
+</CardGroup>
+
+## Source code
+
+The Termux:Widget source is available at [github.com/termux/termux-widget](https://github.com/termux/termux-widget).

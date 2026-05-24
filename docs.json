@@ -1,126 +1,93 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mintlify Starter Kit",
+  "name": "Termux",
+  "theme": "almond",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#1f70c8",
+    "light": "#84a320",
+    "dark": "#c4e768"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://media.brand.dev/965cb50b-79bf-418e-b88c-6bf9fc7ef6b3.jpg",
+  "logo": {
+    "light": "https://media.brand.dev/e8e3ed9e-fa31-48d2-a713-6bf458c99112.svg",
+    "dark": "https://media.brand.dev/e8e3ed9e-fa31-48d2-a713-6bf458c99112.svg"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/termux/termux-app"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/termux/termux-app"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "installation",
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Using Termux",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "using-termux/terminal-basics",
+              "using-termux/package-management",
+              "using-termux/keyboard-shortcuts",
+              "using-termux/storage-access"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Configuration",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/components",
-              "essentials/reusable-snippets"
+              "configuration/termux-properties",
+              "configuration/extra-keys",
+              "configuration/terminal-appearance",
+              "configuration/shell-environment"
             ]
           },
           {
-            "group": "Agent ready",
+            "group": "Plugins",
             "pages": [
-              "agent-ready/prompt",
-              "agent-ready/visibility",
-              "agent-ready/contextual",
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "plugins/overview",
+              "plugins/termux-api",
+              "plugins/termux-boot",
+              "plugins/termux-tasker",
+              "plugins/termux-widget"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/run-command-intent",
+              "advanced/android-integration",
+              "advanced/debugging",
+              "advanced/forking"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Development",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Contributing",
             "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "development/building",
+              "development/termux-shared-library",
+              "development/commit-guidelines"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

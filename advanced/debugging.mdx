@@ -1,0 +1,122 @@
+---
+title: "Debugging Termux: log levels, logcat, and bug reports"
+description: "Set log levels, collect logcat output, generate debug reports, and write effective bug reports for Termux app and plugin problems."
+---
+
+When something goes wrong in Termux or one of its plugins, Android's `logcat` system is your primary diagnostic tool. Termux exposes configurable log levels in its settings so you can increase verbosity, collect logs, and attach them to bug reports — all without root or a PC in most cases.
+
+## Setting the log level
+
+Log levels are configured per-app in Termux's settings UI, available from **Termux app version ≥ 0.118.0**.
+
+Navigate to **Termux Settings → \<App Name\> → Debugging → Log Level** and choose one of the following:
+
+| Level | What is logged |
+|---|---|
+| **Off** | Nothing. All logging suppressed. |
+| **Normal** | Errors, warnings, info messages, and stack traces. This is the default. |
+| **Debug** | Adds debug-level messages on top of Normal. |
+| **Verbose** | Adds verbose messages. Logs additional operational detail. |
+
+<Warning>
+Verbose logs may contain sensitive data — command arguments, environment variables, file paths, and other runtime information. Revert to **Normal** after you finish debugging to avoid leaking private data to logcat during regular use.
+</Warning>
+
+### Plugin apps need their own log level set
+
+Plugin apps (Termux:Tasker, Termux:API, etc.) **do not execute commands themselves**. They send execution intents to the main Termux app, which carries out the actual work. This means log output is split across two processes:
+
+- Set the log level in **Termux Settings → Termux → Debugging → Log Level** to capture what the core app does.
+- Also set the log level in **Termux Settings → \<Plugin Name\> → Debugging → Log Level** to capture what the plugin does before dispatching the intent.
+
+If you only raise the log level in one place, you will miss half of the diagnostic information.
+
+## Collecting logs
+
+### In the Termux terminal
+
+View logs in real time:
+
+```bash
+logcat
+```
+
+Press `Ctrl+C` to stop the stream.
+
+Dump the current log buffer to a file:
+
+```bash
+logcat -d > logcat.txt
+```
+
+Filter to Termux-related tags only:
+
+```bash
+logcat -s TermuxService RunCommandService TermuxActivity
+```
+
+### From a connected PC via ADB
+
+If the terminal is inaccessible (crash on launch, boot loop, etc.), collect logs from a PC:
+
+```bash
+# Stream logs
+adb logcat
+
+# Dump to file
+adb logcat -d > logcat.txt
+
+# Filter by Termux package
+adb logcat | grep -i termux
+```
+
+<Info>
+On non-rooted Android 6+ devices, some log entries from other apps may be redacted unless `READ_LOGS` is granted to the shell via ADB: `adb shell pm grant com.termux android.permission.READ_LOGS`. For Termux's own logs this is usually unnecessary.
+</Info>
+
+## Generating a debug report automatically
+
+The terminal's long-hold context menu provides a one-tap way to bundle logs and filesystem metadata:
+
+<Steps>
+  <Step title="Open the context menu">
+    Long-press anywhere on the Termux terminal screen to open the context menu.
+  </Step>
+  <Step title="Tap More → Report Issue">
+    Select **More → Report Issue** from the menu.
+  </Step>
+  <Step title="Confirm adding debug info">
+    When prompted with *"Add debug info?"*, tap **YES**. Termux will collect `logcat` output and `stat` information for key Termux files and directories and append them to the report.
+  </Step>
+  <Step title="Share or save the report">
+    The report opens in `ReportActivity`. If it is too large to paste directly into a bug report, tap the **⋮ (three dots)** menu in the top-right corner and choose **Save To File**, then attach the file to your issue.
+  </Step>
+</Steps>
+
+## Writing effective bug reports
+
+When opening an issue on GitHub, always include a **complete text report** — not a screenshot of an error message. Partial information makes it very difficult to reproduce or diagnose problems.
+
+A complete report should include:
+
+<AccordionGroup>
+  <Accordion title="Environment information">
+    - Termux version (`termux-info` output, or from Settings → About)
+    - Android version and device model
+    - Installation source (F-Droid, GitHub, Google Play)
+    - Whether any plugins are installed and their versions
+  </Accordion>
+  <Accordion title="Steps to reproduce">
+    A minimal, numbered sequence of steps that reliably triggers the issue. Include exact commands if relevant.
+  </Accordion>
+  <Accordion title="Expected vs actual behaviour">
+    What you expected to happen and what actually happened, with the exact error message or symptom.
+  </Accordion>
+  <Accordion title="Logs">
+    The `logcat` dump or auto-generated debug report. Set the log level to **Debug** or **Verbose** before reproducing the issue, then collect the log immediately after.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+Issues opened with only partial screenshots of error reports instead of full text output are likely to be automatically closed. Always post the complete report text, removing any sensitive information you do not want to share publicly.
+</Warning>

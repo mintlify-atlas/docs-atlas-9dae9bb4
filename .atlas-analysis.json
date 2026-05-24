@@ -1,0 +1,99 @@
+{
+  "projectType": "general",
+  "projectName": "Termux",
+  "projectDescription": "An Android terminal emulator and Linux environment that brings a full command-line experience to Android devices, extendible with thousands of packages.",
+  "theme": "almond",
+  "primaryColor": "#1f70c8",
+  "lightColor": "#84a320",
+  "darkColor": "#c4e768",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Using Termux",
+            "pages": [
+              "using-termux/terminal-basics",
+              "using-termux/package-management",
+              "using-termux/keyboard-shortcuts",
+              "using-termux/storage-access"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/termux-properties",
+              "configuration/extra-keys",
+              "configuration/terminal-appearance",
+              "configuration/shell-environment"
+            ]
+          },
+          {
+            "group": "Plugins",
+            "pages": [
+              "plugins/overview",
+              "plugins/termux-api",
+              "plugins/termux-boot",
+              "plugins/termux-tasker",
+              "plugins/termux-widget"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/run-command-intent",
+              "advanced/android-integration",
+              "advanced/debugging",
+              "advanced/forking"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/building",
+              "development/termux-shared-library",
+              "development/commit-guidelines"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Full terminal emulator with VT100/xterm/screen support on Android",
+    "apt/pkg package manager with thousands of Linux packages",
+    "Customizable extra keys toolbar for touch keyboard input",
+    "Multiple terminal sessions in a single app",
+    "Plugin ecosystem: Termux:API, Termux:Boot, Termux:Float, Termux:Styling, Termux:Tasker, Termux:Widget",
+    "RUN_COMMAND intent for running commands from external apps",
+    "File sharing and viewing via Android intents",
+    "termux-shared library for plugin development via JitPack",
+    "Configurable via ~/.termux/termux.properties",
+    "Samsung DeX and multi-window support"
+  ],
+  "publicApiSurface": [
+    "RUN_COMMAND Service intent (com.termux.RUN_COMMAND)",
+    "TERMUX_SERVICE extras: EXTRA_EXECUTE_IN_BACKGROUND, EXTRA_ARGUMENTS, EXTRA_STDIN, EXTRA_WORKING_DIRECTORY, EXTRA_BACKGROUND_CUSTOM_LOG_LEVEL",
+    "RUN_COMMAND_SERVICE extras: EXTRA_EXECUTE_IN_BACKGROUND, EXTRA_COMMAND_PATH, EXTRA_ARGUMENTS, EXTRA_STDIN, EXTRA_WORKING_DIRECTORY, EXTRA_SESSION_ACTION, EXTRA_PENDING_INTENT",
+    "TermuxConstants (termux-shared library)",
+    "TermuxPropertyConstants (termux-shared library)",
+    "termux.properties keys: extra-keys, back-key, volume-keys, fullscreen, night-mode, terminal-cursor-style, terminal-transcript-rows, bell-character, default-working-directory",
+    "FileShareReceiver / FileViewReceiver intents",
+    "TermuxDocumentsProvider (com.termux.documents)",
+    "JitPack library: com.github.termux:termux-app"
+  ]
+}

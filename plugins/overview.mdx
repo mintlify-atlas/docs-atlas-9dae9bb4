@@ -1,0 +1,52 @@
+---
+title: "Termux plugin ecosystem: overview and installation"
+description: "Extend Termux with six official plugins for Android API access, boot scripts, floating terminal, themes, Tasker automation, and home screen widgets."
+---
+
+Termux ships with six official plugin apps that extend the terminal with Android-native capabilities. Each plugin is a standalone APK that communicates with the main Termux app using the shared user ID `com.termux` and Android's permission system. You install them separately from the Termux app itself, but they must all come from the same distribution source.
+
+<Warning>
+All Termux APKs — the main app and every plugin — must be installed from the **same source**. APKs from different sources are signed with different keys and share the `android:sharedUserId` value `com.termux`, so Android will refuse to install mismatched builds. Do not mix F-Droid and GitHub APKs. If you need to switch sources, uninstall all Termux apps first, then reinstall everything from the new source.
+</Warning>
+
+## How plugins work
+
+Plugins communicate with Termux through Android intents. The main Termux app defines the `com.termux.permission.RUN_COMMAND` permission in its `AndroidManifest.xml`, and plugin apps declare or request that permission to trigger command execution inside the terminal. This means the main Termux app must be installed and running for plugins to function.
+
+Because all Termux apps declare `android:sharedUserId="com.termux"`, they share a Linux user ID on the device, which allows direct inter-process communication. Android enforces that all apps sharing a user ID must be signed with the same certificate — this is why mixing sources causes installation failures such as `INSTALL_FAILED_SHARED_USER_INCOMPATIBLE`.
+
+## Official plugins
+
+<CardGroup cols={2}>
+  <Card title="Termux:API" icon="mobile-screen" href="/plugins/termux-api">
+    Access Android hardware APIs — camera, GPS, sensors, notifications, SMS, clipboard, and more — as command-line tools.
+  </Card>
+  <Card title="Termux:Boot" icon="power-off" href="/plugins/termux-boot">
+    Run scripts automatically when the device boots by placing them in `~/.termux/boot/`.
+  </Card>
+  <Card title="Termux:Float" icon="window-restore" href="https://github.com/termux/termux-float">
+    Open a floating terminal overlay on top of any app without leaving the current screen.
+  </Card>
+  <Card title="Termux:Styling" icon="palette" href="https://github.com/termux/termux-styling">
+    Apply color schemes and fonts to the Termux terminal from a built-in picker.
+  </Card>
+  <Card title="Termux:Tasker" icon="bolt" href="/plugins/termux-tasker">
+    Integrate Termux with the Tasker automation app to trigger scripts from rules, locations, or schedules.
+  </Card>
+  <Card title="Termux:Widget" icon="grid-2" href="/plugins/termux-widget">
+    Add home screen shortcuts and widgets that launch scripts directly from your Android home screen.
+  </Card>
+</CardGroup>
+
+## Installation source
+
+Termux is distributed through two main sources:
+
+- **F-Droid** — [f-droid.org/packages/com.termux](https://f-droid.org/en/packages/com.termux). Builds are compiled and signed by the F-Droid project. Releases typically lag a few days behind GitHub.
+- **GitHub Releases** — [github.com/termux/termux-app/releases](https://github.com/termux/termux-app/releases). Signed with a shared test key. Only use builds downloaded directly from the official repository.
+
+<Note>
+The Google Play version of Termux is experimental and does not support plugins in the same way as F-Droid or GitHub builds. Most users should use F-Droid or GitHub.
+</Note>
+
+Install the main Termux app first, then install each plugin APK from the same source. After installing a plugin APK, open it once to register it with the system before using it from the terminal.

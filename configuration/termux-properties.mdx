@@ -1,0 +1,354 @@
+---
+title: "termux.properties — full configuration file reference"
+description: "Complete reference for all settings in termux.properties, the main configuration file for the Termux terminal emulator on Android."
+---
+
+The `termux.properties` file is the primary way to customize Termux behavior. It controls everything from keyboard shortcuts and extra keys to session handling, URL opening, and display preferences. Termux reads the file once at startup, so any changes require reloading via **Settings → Reload settings** or by restarting the app.
+
+## File location
+
+Termux searches for the file at these paths in order, using the first one found:
+
+| Priority | Path |
+|----------|------|
+| Primary | `~/.termux/termux.properties` |
+| Secondary | `~/.config/termux/termux.properties` |
+
+Create the primary file if it does not already exist:
+
+```bash
+mkdir -p ~/.termux
+nano ~/.termux/termux.properties
+```
+
+After saving changes, reload settings from the Termux notification or restart the app.
+
+---
+
+## Boolean properties
+
+All boolean properties accept `true` or `false`.
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `allow-external-apps` | `false` | Allow third-party apps to execute commands in Termux via `RUN_COMMAND` intent. Enable with caution — this grants external apps shell access. |
+| `ctrl-space-workaround` | `false` | Fix `Ctrl+Space` not working on some custom ROMs. |
+| `disable-file-share-receiver` | `false` | Disable the activity that receives files shared into Termux from other apps. |
+| `disable-file-view-receiver` | `false` | Disable the activity that handles files opened with Termux as a viewer. |
+| `disable-hardware-keyboard-shortcuts` | `false` | Disable all hardware keyboard shortcuts (e.g., `Ctrl+T` for new session). |
+| `disable-terminal-session-change-toast` | `false` | Suppress the toast notification that appears when switching between sessions. |
+| `enforce-char-based-input` | `false` | Force character-by-character input. Fixes missing characters on some Samsung devices where letters only appear after pressing Enter. |
+| `extra-keys-text-all-caps` | `true` | Automatically uppercase the labels on extra key buttons. |
+| `fullscreen` | `false` | Run Termux in fullscreen mode, hiding the Android status bar. |
+| `hide-soft-keyboard-on-startup` | `false` | Do not show the soft keyboard when Termux first opens. |
+| `run-termux-am-socket-server` | `true` | Start the `termux-am` socket server on app launch, enabling `am` commands from within Termux sessions. |
+| `terminal-onclick-url-open` | `false` | Open URLs in a browser on a single tap instead of requiring a long-press. |
+| `use-fullscreen-workaround` | `false` | Apply a workaround for fullscreen issues on some Android versions. |
+
+<Warning>
+Setting `allow-external-apps=true` lets any app with the `com.termux.permission.RUN_COMMAND` permission execute arbitrary commands in your Termux environment. Only enable this if you understand the security implications.
+</Warning>
+
+---
+
+## String properties
+
+### `back-key`
+
+Controls what the hardware Back key does inside a terminal session.
+
+| Value | Behavior |
+|-------|----------|
+| `back` | Standard Android back navigation (default) |
+| `escape` | Send an Escape key event to the terminal |
+
+```properties
+back-key=escape
+```
+
+### `bell-character`
+
+Defines how Termux responds to the terminal bell character (`\a` / `^G`).
+
+| Value | Behavior |
+|-------|----------|
+| `vibrate` | Vibrate the device (default) |
+| `beep` | Play a short beep sound |
+| `ignore` | Do nothing |
+
+```properties
+bell-character=ignore
+```
+
+### `night-mode`
+
+Controls the app color theme. See the [terminal appearance](/configuration/terminal-appearance) page for more detail.
+
+| Value | Behavior |
+|-------|----------|
+| `system` | Follow the Android system dark/light mode setting (default) |
+| `true` | Force dark (night) mode |
+| `false` | Force light mode |
+
+```properties
+night-mode=true
+```
+
+### `soft-keyboard-toggle-behaviour`
+
+Defines what happens when the keyboard toggle button is tapped.
+
+| Value | Behavior |
+|-------|----------|
+| `show/hide` | Show or hide the keyboard (default) |
+| `enable/disable` | Enable or disable the keyboard entirely |
+
+```properties
+soft-keyboard-toggle-behaviour=enable/disable
+```
+
+### `volume-keys`
+
+Controls whether the hardware volume keys act as volume controls or as virtual modifier keys within the terminal.
+
+| Value | Behavior |
+|-------|----------|
+| `virtual` | Volume-up acts as a special key for shortcuts; volume-down opens special input (default) |
+| `volume` | Volume keys control media volume as normal |
+
+```properties
+volume-keys=volume
+```
+
+### `default-working-directory`
+
+The directory that new terminal sessions start in. Defaults to `$HOME` (`/data/data/com.termux/files/home`).
+
+```properties
+default-working-directory=/data/data/com.termux/files/home/projects
+```
+
+---
+
+## Numeric properties
+
+### `terminal-cursor-blink-rate`
+
+Blink interval for the terminal cursor in milliseconds. Set to `0` to disable blinking.
+
+- **Default:** `0` (no blink)
+- **Range:** `0`, or `100`–`2000`
+
+```properties
+terminal-cursor-blink-rate=600
+```
+
+### `terminal-margin-horizontal`
+
+Left and right padding inside the terminal view, in dp units.
+
+- **Default:** `3`
+- **Range:** `0`–`100`
+
+```properties
+terminal-margin-horizontal=8
+```
+
+### `terminal-margin-vertical`
+
+Top and bottom padding inside the terminal view, in dp units.
+
+- **Default:** `0`
+- **Range:** `0`–`100`
+
+```properties
+terminal-margin-vertical=4
+```
+
+### `terminal-transcript-rows`
+
+Number of rows kept in the scrollback buffer.
+
+- **Default:** `2000`
+- **Range:** `100`–`50000`
+
+```properties
+terminal-transcript-rows=5000
+```
+
+### `terminal-toolbar-height`
+
+Scale factor for the extra-keys toolbar height.
+
+- **Default:** `1.0`
+- **Range:** `0.4`–`3.0`
+
+```properties
+terminal-toolbar-height=1.5
+```
+
+### `delete-tmpdir-files-older-than-x-days-on-exit`
+
+How many days old a file in `$TMPDIR` must be before it is deleted when Termux exits.
+
+- **Default:** `3`
+- **Range:** `-1`–`100000`
+- `-1` disables deletion entirely; `0` deletes all files in `$TMPDIR` on exit.
+
+```properties
+delete-tmpdir-files-older-than-x-days-on-exit=7
+```
+
+---
+
+## Keyboard shortcut properties
+
+These integer properties assign keyboard shortcuts (as key codes) to session actions. Each property takes a hardware key code integer.
+
+| Property | Action |
+|----------|--------|
+| `shortcut.create-session` | Create a new terminal session |
+| `shortcut.next-session` | Switch to the next session |
+| `shortcut.previous-session` | Switch to the previous session |
+| `shortcut.rename-session` | Rename the current session |
+
+---
+
+## Extra keys property
+
+The `extra-keys` property configures the row of buttons displayed above the soft keyboard. See the [extra keys](/configuration/extra-keys) page for complete syntax and examples.
+
+```properties
+extra-keys=[['ESC','/',{key: '-', popup: '|'},'HOME','UP','END','PGUP'], \
+            ['TAB','CTRL','ALT','LEFT','DOWN','RIGHT','PGDN']]
+```
+
+The `extra-keys-style` property controls which Unicode symbols are used as button labels:
+
+| Value | Description |
+|-------|-------------|
+| `default` | Classic arrows + well-known symbols (default) |
+| `arrows-only` | Only arrow symbols use glyphs; other keys show text |
+| `arrows-all` | Arrows and navigation keys use glyphs |
+| `all` | All keys with ISO symbols use them |
+| `none` | All keys display as plain text |
+
+---
+
+## Complete sample file
+
+```properties
+# ~/.termux/termux.properties
+
+###############################################################################
+# Keyboard
+###############################################################################
+
+# Treat hardware back key as escape
+back-key=back
+
+# What volume keys do inside the terminal
+volume-keys=virtual
+
+# Disable hardware keyboard shortcuts (Ctrl+T, Ctrl+N, etc.)
+disable-hardware-keyboard-shortcuts=false
+
+# Show/hide or enable/disable soft keyboard toggle button behavior
+soft-keyboard-toggle-behaviour=show/hide
+
+# Hide soft keyboard when app starts
+hide-soft-keyboard-on-startup=false
+
+# Fix Ctrl+Space on some ROMs
+ctrl-space-workaround=false
+
+# Force character-based input (fixes Samsung key input issues)
+enforce-char-based-input=false
+
+###############################################################################
+# Extra keys toolbar
+###############################################################################
+
+extra-keys=[['ESC','/',{key: '-', popup: '|'},'HOME','UP','END','PGUP'], \
+            ['TAB','CTRL','ALT','LEFT','DOWN','RIGHT','PGDN']]
+
+extra-keys-style=default
+
+extra-keys-text-all-caps=true
+
+###############################################################################
+# Terminal appearance
+###############################################################################
+
+# Dark mode: system | true | false
+night-mode=system
+
+# Cursor style: block | underline | bar
+terminal-cursor-style=block
+
+# Cursor blink rate in ms (0 = disabled, valid range: 100-2000)
+terminal-cursor-blink-rate=0
+
+# Horizontal padding in dp (0-100)
+terminal-margin-horizontal=3
+
+# Vertical padding in dp (0-100)
+terminal-margin-vertical=0
+
+# Toolbar height scale factor (0.4-3.0)
+terminal-toolbar-height=1.0
+
+# Scrollback rows (100-50000)
+terminal-transcript-rows=2000
+
+###############################################################################
+# Session behavior
+###############################################################################
+
+# Default directory for new sessions
+default-working-directory=/data/data/com.termux/files/home
+
+# Bell response: vibrate | beep | ignore
+bell-character=vibrate
+
+# Open URLs on tap (instead of long-press)
+terminal-onclick-url-open=false
+
+# Show toast when switching sessions
+disable-terminal-session-change-toast=false
+
+###############################################################################
+# Files and storage
+###############################################################################
+
+# Delete $TMPDIR files older than N days on exit (-1=never, 0=all)
+delete-tmpdir-files-older-than-x-days-on-exit=3
+
+# Disable file share/view receivers
+disable-file-share-receiver=false
+disable-file-view-receiver=false
+
+###############################################################################
+# Display
+###############################################################################
+
+# Run in fullscreen (hides status bar)
+fullscreen=false
+
+# Fullscreen workaround for some Android versions
+use-fullscreen-workaround=false
+
+###############################################################################
+# Security
+###############################################################################
+
+# Allow third-party apps to run commands via RUN_COMMAND intent
+allow-external-apps=false
+
+###############################################################################
+# Termux-AM socket server
+###############################################################################
+
+# Start the termux-am socket server on launch
+run-termux-am-socket-server=true
+```

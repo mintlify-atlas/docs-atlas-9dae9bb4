@@ -1,0 +1,126 @@
+---
+title: "Termux:Tasker — automate Termux scripts with Tasker"
+description: "Termux:Tasker lets Tasker execute shell scripts inside Termux, enabling location-triggered backups, scheduled tasks, and event-driven automation."
+---
+
+Termux:Tasker connects the Termux terminal to [Tasker](https://tasker.joaoapps.com/), the Android automation app. With this plugin installed, Tasker can execute shell scripts that run inside the full Termux environment — with access to all your installed packages, environment variables, and the filesystem. This makes it possible to trigger terminal commands from any event Tasker can detect: location changes, time schedules, notifications, battery levels, and more.
+
+## Requirements
+
+- The **Termux** app installed from F-Droid or GitHub
+- The **Termux:Tasker APK** installed from the same source as Termux
+- The **Tasker** app (paid, available on Google Play)
+- `allow-external-apps = true` set in `~/.termux/termux.properties`
+
+## Enabling external app access
+
+<Warning>
+Termux blocks external apps from running commands by default. You must explicitly opt in by setting `allow-external-apps = true` in `~/.termux/termux.properties`. Without this setting, Tasker actions will silently fail.
+</Warning>
+
+Open or create `~/.termux/termux.properties` and add:
+
+```properties
+allow-external-apps = true
+```
+
+Restart the Termux app after making this change.
+
+## Installation
+
+<Steps>
+  <Step title="Install Termux:Tasker APK">
+    Download and install the Termux:Tasker APK from the **same source** as your Termux app (F-Droid or GitHub).
+  </Step>
+  <Step title="Enable external apps in Termux">
+    In the Termux terminal, edit your properties file:
+
+    ```bash
+    mkdir -p ~/.termux
+    echo 'allow-external-apps = true' >> ~/.termux/termux.properties
+    ```
+
+    Then restart the Termux app.
+  </Step>
+  <Step title="Grant RUN_COMMAND permission to Tasker">
+    Go to **Android Settings → Apps → Termux → Permissions** and grant Tasker the `RUN_COMMAND` permission. Alternatively, Termux will prompt you when Tasker first attempts to run a command.
+  </Step>
+  <Step title="Create the tasker scripts directory">
+    Scripts executed by Tasker must live in `~/.termux/tasker/`:
+
+    ```bash
+    mkdir -p ~/.termux/tasker
+    ```
+  </Step>
+  <Step title="Add a Termux action in Tasker">
+    In Tasker, create a task and add an action: **Plugin → Termux:Tasker**. Configure the action to point to a script in `~/.termux/tasker/`.
+  </Step>
+</Steps>
+
+## Creating Tasker scripts
+
+All scripts that Tasker can execute must be placed in `~/.termux/tasker/` and must be marked executable:
+
+```bash
+# Create the tasker scripts directory
+mkdir -p ~/.termux/tasker
+
+# Create a backup script
+cat > ~/.termux/tasker/backup.sh << 'EOF'
+#!/data/data/com.termux/files/usr/bin/bash
+tar -czf ~/backup-$(date +%Y%m%d).tar.gz ~/projects/
+EOF
+chmod +x ~/.termux/tasker/backup.sh
+```
+
+The script is now available to select in the Termux:Tasker Tasker plugin action.
+
+## The RUN_COMMAND permission
+
+Termux exposes a `com.termux.permission.RUN_COMMAND` Android permission. This is declared as `dangerous` in the Termux `AndroidManifest.xml`, meaning Android requires explicit user approval before any external app can use it. Tasker must hold this permission to trigger script execution in Termux.
+
+If Tasker does not have the permission, actions will fail silently. Check **Android Settings → Apps → Tasker → Permissions** to verify the permission is granted.
+
+## Common use cases
+
+<AccordionGroup>
+  <Accordion title="Scheduled backups">
+    Use a Tasker time profile to trigger a backup script at a fixed time each day:
+
+    ```bash
+    #!/data/data/com.termux/files/usr/bin/bash
+    rsync -av ~/projects/ user@server:/backups/
+    ```
+  </Accordion>
+  <Accordion title="Location-triggered scripts">
+    Run a script when you arrive at or leave a location. For example, connect to a VPN when leaving home:
+
+    ```bash
+    #!/data/data/com.termux/files/usr/bin/bash
+    wg-quick up wg0
+    ```
+  </Accordion>
+  <Accordion title="Notification-triggered tasks">
+    React to Android notifications by parsing their contents and acting on them — sending a webhook, logging an event, or forwarding a message.
+  </Accordion>
+  <Accordion title="Battery-triggered power management">
+    Stop battery-draining background processes when the battery drops below a threshold:
+
+    ```bash
+    #!/data/data/com.termux/files/usr/bin/bash
+    pkill -f syncthing
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Passing variables from Tasker to scripts
+
+Tasker can pass local variables to Termux scripts as environment variables. In Tasker, set variables like `%termux_arg1` and they will be available in the script environment. Refer to the Termux:Tasker documentation on GitHub for the full variable passing interface.
+
+<Note>
+Script output (stdout/stderr) is returned to Tasker as a task result variable, making it possible to branch Tasker flows based on script output.
+</Note>
+
+## Source code
+
+The Termux:Tasker source is available at [github.com/termux/termux-tasker](https://github.com/termux/termux-tasker).

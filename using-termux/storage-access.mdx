@@ -1,0 +1,125 @@
+---
+title: "Storage access, symlinks, and file sharing in Termux"
+description: "How to grant storage permission, use ~/storage symlinks to reach Android shared storage, and share files between Termux and other Android apps."
+---
+
+Termux runs inside Android's application sandbox, so its private files are separate from the rest of Android storage by default. To access your photos, downloads, and other files in shared storage — or to allow other apps to access files in Termux — you need to grant the storage permission and understand where things live.
+
+## Internal Termux storage
+
+Termux has two important directories inside its private app data, both accessible at all times without any special permissions:
+
+| Directory | Path | Purpose |
+|-----------|------|---------|
+| `$HOME` | `/data/data/com.termux/files/home` | Your home directory; shell config files, projects, etc. |
+| `$PREFIX` | `/data/data/com.termux/files/usr` | The Linux-style prefix; installed packages live here |
+
+These paths are owned by the Termux process and are not visible to other apps. Backups and sensitive data belong here.
+
+## Requesting storage permission
+
+To access the Android shared storage (SD card, Downloads, DCIM, etc.), you must grant Termux permission to read and write external storage. Run the setup command once:
+
+```bash
+termux-setup-storage
+```
+
+This prompts the Android permission dialog. Grant the permission, and Termux will create a set of symlinks inside `~/storage/` pointing to the standard Android directories.
+
+<Warning>
+  On Android 11 and higher, apps targeting SDK 30 must request either `WRITE_EXTERNAL_STORAGE` (legacy) or `MANAGE_EXTERNAL_STORAGE` to access primary external storage. Termux requests both in its manifest. If storage access stops working after an Android upgrade, re-run `termux-setup-storage`.
+</Warning>
+
+## The ~/storage symlinks
+
+After running `termux-setup-storage`, the following symlinks are created inside `~/storage/`:
+
+| Symlink | Target | Contents |
+|---------|--------|----------|
+| `~/storage/shared` | `/storage/emulated/0` | Root of primary shared storage |
+| `~/storage/documents` | `…/Documents` | Documents folder |
+| `~/storage/downloads` | `…/Downloads` | Downloads folder |
+| `~/storage/dcim` | `…/DCIM` | Camera photos and videos |
+| `~/storage/pictures` | `…/Pictures` | Pictures folder |
+| `~/storage/music` | `…/Music` | Music folder |
+| `~/storage/movies` | `…/Movies` | Movies folder |
+| `~/storage/podcasts` | `…/Podcasts` | Podcasts folder |
+| `~/storage/audiobooks` | `…/Audiobooks` | Audiobooks (Android 10+) |
+| `~/storage/external-0` | App-specific external storage | Primary external storage (`Android/data/com.termux`) |
+| `~/storage/external-N` | App-specific external storage | Additional SD cards (if present) |
+| `~/storage/media-N` | App-specific media storage | `Android/media/com.termux` directories |
+
+<Note>
+  `~/storage/external-0` points to `Android/data/com.termux` on the primary storage, not the root of the SD card. Use `~/storage/shared` to access the root of shared internal storage.
+</Note>
+
+### Example: copying a file to Downloads
+
+```bash
+cp myreport.pdf ~/storage/downloads/
+```
+
+### Example: reading a photo
+
+```bash
+ls ~/storage/dcim/Camera/
+```
+
+## Differences between Termux storage and Android shared storage
+
+<CardGroup cols={2}>
+  <Card title="Termux private storage ($HOME, $PREFIX)">
+    - Not visible to other apps
+    - No special permissions required
+    - Fast, no Android storage restrictions
+    - Survives factory reset only if backed up manually
+    - Cleared if you uninstall Termux
+  </Card>
+  <Card title="Android shared storage (~/storage/shared)">
+    - Visible to other apps and file managers
+    - Requires storage permission
+    - Subject to Android scoped storage rules on API 30+
+    - Persists after Termux uninstall
+    - Accessible via USB file transfer / MTP
+  </Card>
+</CardGroup>
+
+## Sharing files to Termux from other apps
+
+Termux registers as a file and content receiver in its `AndroidManifest.xml`. Other apps can share files directly to Termux via the standard Android share sheet:
+
+- Tap **Share** in any app (for example, a file manager or browser).
+- Choose **Termux** from the share targets.
+- A dialog prompts you to name the file. The file is saved to `~/downloads/` inside Termux's private storage and Termux opens a terminal session in that directory ready to work with it.
+
+Termux accepts the following MIME types via `android.intent.action.SEND`: `application/*`, `audio/*`, `image/*`, `message/*`, `multipart/*`, `text/*`, and `video/*`.
+
+You can disable this receiver by setting `disable-file-share-receiver=true` in `~/.termux/termux.properties`.
+
+## Viewing files from other apps in Termux
+
+Termux also registers as a file viewer (`android.intent.action.VIEW`) for `application/*`, `audio/*`, `image/*`, `text/*`, and `video/*` MIME types. This lets you open files from a file manager directly in a Termux terminal session.
+
+Disable this with `disable-file-view-receiver=true` in `~/.termux/termux.properties`.
+
+## Termux as a DocumentsProvider
+
+Termux registers a `DocumentsProvider` (`com.termux.filepicker.TermuxDocumentsProvider`) under the authority `com.termux.documents`. This means:
+
+- Any app that uses the Android system file picker (Storage Access Framework) can browse and open files stored inside Termux's private home directory.
+- You can access Termux files from apps like solid Explorer, FX File Explorer, or any other SAF-compatible file manager.
+
+No extra permissions are required on the Termux side for this to work — the `DocumentsProvider` is exported and protected by `android.permission.MANAGE_DOCUMENTS`.
+
+## Android 11+ scoped storage
+
+On Android 11 (API 30) and higher, Android enforces scoped storage more strictly. Key points for Termux users:
+
+- Direct filesystem access to `/sdcard` and `/storage/emulated/0` requires either `WRITE_EXTERNAL_STORAGE` (legacy, allowed via `requestLegacyExternalStorage`) or `MANAGE_EXTERNAL_STORAGE`. Termux requests both in its manifest.
+- The `~/storage/shared` symlink points to `/storage/emulated/0` and should work normally after `termux-setup-storage`.
+- Third-party files in `Android/data/` belonging to other apps are no longer accessible, even with `MANAGE_EXTERNAL_STORAGE`, on some Android versions.
+- If you see "Permission denied" errors accessing shared storage, re-run `termux-setup-storage` and ensure you grant the "Allow management of all files" permission in Android Settings when prompted.
+
+<Info>
+  If Termux shows a storage-related error notification on startup, it can send a broadcast to re-trigger the permission request. You may also see this via **Settings → Apps → Termux → Permissions → Files and media**.
+</Info>

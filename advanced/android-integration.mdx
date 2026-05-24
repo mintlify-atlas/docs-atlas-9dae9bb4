@@ -1,0 +1,140 @@
+---
+title: "Termux Android integration: permissions and file sharing"
+description: "How Termux integrates with Android: file sharing, DocumentsProvider, system permissions, Samsung DeX, and background process handling on Android 12+."
+---
+
+Termux is not an isolated app — it registers several Android system entry points that allow other apps to share files with it, let file managers browse its filesystem, and let it survive in the background as a long-running Linux environment. Understanding these integration points helps you make the most of Termux on modern Android versions and diagnose unexpected behaviour from the OS.
+
+## File sharing integration
+
+Termux registers two `activity-alias` entries in its `AndroidManifest.xml` that make it appear in Android's share sheet and file-viewer choosers.
+
+### Receiving shared files (FileShareReceiverActivity)
+
+`com.termux.app.api.file.FileShareReceiverActivity` handles `android.intent.action.SEND` intents. It accepts the following MIME types:
+
+- `application/*`
+- `audio/*`
+- `image/*`
+- `message/*`
+- `multipart/*`
+- `text/*`
+- `video/*`
+
+When another app shares a file to Termux via the system share sheet, Android delivers a `content://` URI pointing at the file. Termux prompts for a filename and saves the file to `~/downloads/` inside its private storage. It then opens a terminal session in that directory so you can process it with standard command-line tools. If `~/bin/termux-file-editor` exists and is executable, Termux invokes it with the received file path as the argument instead.
+
+### Opening/viewing files (FileViewReceiverActivity)
+
+`com.termux.app.api.file.FileViewReceiverActivity` handles `android.intent.action.VIEW` intents with the same broad set of MIME types (excluding `message/*` and `multipart/*`). This lets Termux appear in the "Open with…" chooser for most file types, enabling you to open a file directly in the terminal.
+
+### Disabling receivers
+
+Both receivers can be disabled via `termux.properties`:
+
+```properties
+# Prevent Termux from appearing in the share sheet
+disable-file-share-receiver = true
+
+# Prevent Termux from appearing in "Open with..." dialogs
+disable-file-view-receiver = true
+```
+
+The properties file is read from `~/.termux/termux.properties` (primary) or `~/.config/termux/termux.properties` (secondary).
+
+## DocumentsProvider
+
+Termux registers a `DocumentsProvider` with authority `com.termux.documents`:
+
+```xml
+<provider
+    android:authorities="com.termux.documents"
+    android:permission="android.permission.MANAGE_DOCUMENTS"
+    android:exported="true"
+    android:grantUriPermissions="true" />
+```
+
+Apps that hold `MANAGE_DOCUMENTS` permission — such as system file managers and backup tools — can use this provider to browse Termux's home directory (`$HOME`) and prefix directory (`$PREFIX`) without requiring root. The provider surfaces these directories as a standard Android document tree, which means users can navigate them through the Android system file picker and grant other apps access to specific files.
+
+<Info>
+The DocumentsProvider is separate from the file-sharing `ContentProvider` (`com.termux.files`), which is protected by `com.termux.permission.RUN_COMMAND` and used internally by the `RUN_COMMAND` API for URI-based file access.
+</Info>
+
+## Android permissions
+
+Termux requests the following permissions. Understanding each one helps with troubleshooting and explains why certain prompts appear on first launch.
+
+<AccordionGroup>
+  <Accordion title="Networking">
+    - `INTERNET` — Required for package management (`apt`/`pkg`), SSH, curl, and any network-using package.
+    - `ACCESS_NETWORK_STATE` — Lets Termux check connectivity before network operations.
+  </Accordion>
+  <Accordion title="Storage">
+    - `READ_EXTERNAL_STORAGE` / `WRITE_EXTERNAL_STORAGE` — Legacy storage access used on Android < 10.
+    - `MANAGE_EXTERNAL_STORAGE` — Broad filesystem access on Android 11+, required to access paths outside `/sdcard/Android/data/com.termux`. Prompted when you run `termux-setup-storage`.
+    - `REQUEST_INSTALL_PACKAGES` — Allows installing APKs from within Termux.
+  </Accordion>
+  <Accordion title="Background execution">
+    - `WAKE_LOCK` — Keeps the CPU awake during long-running terminal sessions or background commands.
+    - `FOREGROUND_SERVICE` — Required to run `TermuxService` as a foreground service with a persistent notification, keeping the process alive.
+    - `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` — Lets Termux ask Android to exclude it from battery-saving process killing. Granting this is important for reliable background operation (see [Android 12+ considerations](#android-12-considerations)).
+    - `RECEIVE_BOOT_COMPLETED` — Allows `SystemEventReceiver` to receive `BOOT_COMPLETED` broadcasts, which is required by the Termux:Boot plugin to run startup scripts.
+  </Accordion>
+  <Accordion title="UI and display">
+    - `SYSTEM_ALERT_WINDOW` — Draws the floating overlay window used by Termux:Float.
+    - `VIBRATE` — Provides haptic feedback for the extra keys bar.
+  </Accordion>
+  <Accordion title="Diagnostics (signature/privileged)">
+    - `READ_LOGS` — Reads system logcat output. Requires ADB grant on non-rooted devices.
+    - `DUMP` — Dumps system service state. Requires ADB grant.
+    - `WRITE_SECURE_SETTINGS` — Modifies secure system settings. Requires ADB grant.
+    - `PACKAGE_USAGE_STATS` — Reads app usage statistics.
+  </Accordion>
+</AccordionGroup>
+
+## Android 12+ considerations
+
+<Warning>
+Android 12 introduced **phantom process killing**: the OS will kill processes beyond a limit of 32 phantom processes (shared across all apps), and will also terminate any process using excessive CPU. You may see `[Process completed (signal 9) - press Enter]` in the terminal even though you did not exit the shell yourself.
+</Warning>
+
+This affects any long-running background commands or servers you start from Termux. Mitigation steps:
+
+<Steps>
+  <Step title="Disable battery optimisation for Termux">
+    Go to **Android Settings → Apps → Termux → Battery** and select **Unrestricted** (or **Don't optimise**, depending on your device). This is the most effective step for keeping Termux alive in the background.
+
+    Alternatively, open Termux and run:
+
+    ```bash
+    # Opens the battery optimisation exemption prompt
+    am start -a android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS \
+      -d package:com.termux
+    ```
+  </Step>
+  <Step title="Keep TermuxService in foreground">
+    The Termux notification (from `TermuxService`) must remain visible. Do not dismiss it or kill the app from the recents screen — doing so terminates all running sessions.
+  </Step>
+  <Step title="Android 12L / 13 and later">
+    An option to disable phantom process trimming became available in Android 12L and Android 13 via developer options or ADB (`device_config` flags). Check the [upstream issue #2366](https://github.com/termux/termux-app/issues/2366) for the latest guidance.
+  </Step>
+</Steps>
+
+## Samsung DeX support
+
+Termux includes metadata entries that opt it into Samsung's multi-display and DeX features:
+
+| Metadata key | Value | Effect |
+|---|---|---|
+| `com.samsung.android.keepalive.density` | `true` | DeX Mode and Screen Mirroring support (DeX < 3.0) |
+| `com.samsung.android.multidisplay.keep_process_alive` | `true` | DeX Dual Mode support (DeX ≥ 3.0) |
+| `com.sec.android.support.multiwindow` | `true` | Samsung multi-window support |
+| `android.max_aspect` | `10.0` | Allows full-screen on ultra-wide displays (required for Samsung Galaxy S8+) |
+
+`TermuxActivity` is also declared with `android:resizeableActivity="true"`, enabling split-screen and freeform window modes on supported Android versions.
+
+## Shared user ID
+
+All Termux plugin APKs (`com.termux`, `com.termux.api`, `com.termux.boot`, `com.termux.window`, `com.termux.styling`, `com.termux.tasker`, `com.termux.widget`) share the `android:sharedUserId` value `com.termux`. This means:
+
+- All apps run under the same Linux UID and can read each other's files.
+- All APKs installed on a device **must be signed with the same key**. Mixing APKs from different sources (F-Droid, GitHub, Google Play) will cause `INSTALL_FAILED_SHARED_USER_INCOMPATIBLE` errors.

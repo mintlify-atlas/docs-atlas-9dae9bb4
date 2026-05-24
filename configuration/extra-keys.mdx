@@ -1,0 +1,233 @@
+---
+title: "Extra keys toolbar: layout, popup keys, and styles"
+description: "Configure the extra keys toolbar in Termux to add custom buttons above the soft keyboard, including popup keys, macros, and display labels."
+---
+
+The extra keys toolbar sits between the terminal and the soft keyboard, providing one-tap access to keys that are awkward or impossible to type on a touchscreen — like `ESC`, `CTRL`, `ALT`, and arrow keys. You configure it through the `extra-keys` property in `~/.termux/termux.properties`. Each change takes effect after reloading settings.
+
+## Default configuration
+
+Out of the box, Termux shows a two-row toolbar:
+
+```properties
+extra-keys=[['ESC','/',{key: '-', popup: '|'},'HOME','UP','END','PGUP'], \
+            ['TAB','CTRL','ALT','LEFT','DOWN','RIGHT','PGDN']]
+```
+
+This produces:
+
+- **Row 1:** `ESC` `/` `-` (long-press for `|`) `HOME` `↑` `END` `PGUP`
+- **Row 2:** `TAB` `CTRL` `ALT` `←` `↓` `→` `PGDN`
+
+---
+
+## Syntax
+
+The `extra-keys` value is a JSON array of rows. Each row is an array of keys. Keys can be either a plain string or an object.
+
+```
+extra-keys = [ [row1_key1, row1_key2, ...], [row2_key1, ...], ... ]
+```
+
+### Plain string key
+
+The simplest form — just the key name as a string:
+
+```properties
+extra-keys=[['ESC', 'TAB', 'CTRL', 'ALT']]
+```
+
+### Object key
+
+Use an object to set a popup key, a macro sequence, or a custom display label:
+
+```properties
+# Key with a popup triggered by long-press or swipe up
+{key: 'KEY_NAME', popup: 'POPUP_KEY_NAME'}
+
+# Macro: sends a sequence of keys on press
+{macro: 'CTRL f d', display: 'tmux exit'}
+
+# Custom display label
+{key: 'ENTER', display: '↵'}
+```
+
+<Note>
+Object syntax inside `termux.properties` does not need outer quotes for the key names. Both `{key: ESC}` and `{key: 'ESC'}` are valid.
+</Note>
+
+---
+
+## Named keys
+
+These key names are recognized in the extra-keys configuration. Names are case-insensitive and several aliases are accepted.
+
+### Navigation and editing
+
+| Name | Alias(es) | Description |
+|------|-----------|-------------|
+| `UP` | | Up arrow |
+| `DOWN` | `DN` | Down arrow |
+| `LEFT` | `LT` | Left arrow |
+| `RIGHT` | `RT` | Right arrow |
+| `HOME` | | Home key |
+| `END` | | End key |
+| `PGUP` | `PAGEUP`, `PAGE_UP`, `PAGE-UP`, `PAGE UP` | Page up |
+| `PGDN` | `PAGEDOWN`, `PAGE_DOWN`, `PAGE-DOWN` | Page down |
+| `INS` | | Insert |
+| `DEL` | `DELETE` | Forward delete |
+| `BKSP` | `BACKSPACE` | Backspace |
+
+### Control and function keys
+
+| Name | Alias(es) | Description |
+|------|-----------|-------------|
+| `ESC` | `ESCAPE` | Escape |
+| `TAB` | | Tab |
+| `CTRL` | `CONTROL` | Control modifier |
+| `ALT` | | Alt modifier |
+| `SHIFT` | `SHFT` | Shift modifier |
+| `FN` | `FUNCTION` | Function modifier |
+| `ENTER` | `RETURN` | Enter/Return |
+| `SPACE` | | Space bar |
+| `F1`–`F12` | | Function keys |
+
+### Special buttons
+
+| Name | Description |
+|------|-------------|
+| `KEYBOARD` | Toggle the soft keyboard |
+| `DRAWER` | Open the sessions drawer |
+| `PASTE` | Paste from clipboard |
+| `SCROLL` | Scroll lock toggle |
+
+### Character aliases
+
+| Alias | Actual character |
+|-------|-----------------|
+| `BACKSLASH` | `\` |
+| `QUOTE` | `"` |
+| `APOSTROPHE` | `'` |
+
+Any string not in the named key tables is sent as literal text to the terminal.
+
+---
+
+## Examples
+
+<Tabs>
+  <Tab title="Single row">
+    A minimal toolbar with the most-used keys on a single row:
+
+    ```properties
+    extra-keys=[[ESC, TAB, CTRL, ALT, {key: '-', popup: '|'}, DOWN, UP]]
+    ```
+  </Tab>
+  <Tab title="Default double row">
+    The built-in default, showing two full rows:
+
+    ```properties
+    extra-keys=[['ESC','/',{key: '-', popup: '|'},'HOME','UP','END','PGUP'], \
+                ['TAB','CTRL','ALT','LEFT','DOWN','RIGHT','PGDN']]
+    ```
+  </Tab>
+  <Tab title="tmux-focused">
+    A layout optimized for tmux users, with common tmux bindings as popup macros:
+
+    ```properties
+    extra-keys=[[
+      {key: ESC,  popup: {macro: 'CTRL f d',    display: 'tmux exit'}},
+      {key: CTRL, popup: {macro: 'CTRL f BKSP', display: 'tmux ←'}},
+      {key: ALT,  popup: {macro: 'CTRL f TAB',  display: 'tmux →'}},
+      {key: TAB,  popup: {macro: 'ALT a',        display: 'A-a'}},
+      {key: LEFT, popup: HOME},
+      {key: DOWN, popup: PGDN},
+      {key: UP,   popup: PGUP},
+      {key: RIGHT,popup: END},
+      {macro: 'ALT j', display: 'A-j', popup: {macro: 'ALT g', display: 'A-g'}},
+      {key: KEYBOARD, popup: {macro: 'CTRL d', display: 'exit'}}
+    ]]
+    ```
+  </Tab>
+  <Tab title="Function keys">
+    Adding F-key rows for editors like Midnight Commander or nano:
+
+    ```properties
+    extra-keys=[['ESC','CTRL','ALT','TAB','F1','F2','F3','F4','F5'], \
+                ['F6','F7','F8','F9','F10','UP','DOWN','LEFT','RIGHT']]
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Popup keys
+
+A popup is a secondary action triggered by a long-press or swipe-up on a button. Define it with the `popup` field on an object key:
+
+```properties
+# Simple popup: press for '-', long-press for '|'
+{key: '-', popup: '|'}
+
+# Popup with a macro and custom label
+{key: 'CTRL', popup: {macro: 'CTRL ALT t', display: 'new term'}}
+```
+
+Popup values follow the same syntax as regular keys — they can be a named key string, a literal character, or an object with `macro` and `display`.
+
+---
+
+## Macros
+
+A macro sends a sequence of space-separated key names as a single button press. Use the `macro` field in place of `key`:
+
+```properties
+{macro: 'CTRL f d', display: 'tmux exit'}
+```
+
+Each token in the macro string is a named key or a literal character. For example, `CTRL f d` sends `Ctrl`, then `f`, then `d` — which is the tmux prefix (`Ctrl+F`) followed by `d` to detach.
+
+---
+
+## Custom display labels
+
+The `display` field overrides the button label with any text you choose:
+
+```properties
+{key: 'PGUP', display: '⇑'}
+{macro: 'CTRL c', display: 'INT'}
+```
+
+Without a `display` value, labels are drawn from the active `extra-keys-style` display map.
+
+---
+
+## extra-keys-style
+
+The `extra-keys-style` property controls which Unicode symbols replace key names as button labels. It applies to all buttons that do not have an explicit `display` value.
+
+```properties
+extra-keys-style=default
+```
+
+| Value | Description |
+|-------|-------------|
+| `default` | Arrow keys show `←↑↓→`; `ENTER`→`↲`, `TAB`→`↹`, `BKSP`→`⌫`, `DEL`→`⌦`; `-`→`―` |
+| `arrows-only` | Only the four arrow keys use Unicode glyphs; `-`→`―` |
+| `arrows-all` | Arrows + navigation (`HOME`→`⇱`, `END`→`⇲`, `PGUP`→`⇑`, `PGDN`→`⇓`) + `arrows-only` glyphs |
+| `all` | All available ISO symbols including `CTRL`→`⎈`, `ALT`→`⎇`, `ESC`→`⎋` |
+| `none` | Every key is displayed as plain text |
+
+---
+
+## Capitalization
+
+By default all button labels are uppercased automatically (`extra-keys-text-all-caps=true`). To preserve mixed-case custom labels, set:
+
+```properties
+extra-keys-text-all-caps=false
+```
+
+<Tip>
+Use `extra-keys-text-all-caps=false` together with `display` values when you want lowercase shorthand labels like `a-j` or `C-c`.
+</Tip>

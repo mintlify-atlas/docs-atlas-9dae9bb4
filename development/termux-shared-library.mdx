@@ -1,0 +1,134 @@
+---
+title: 'termux-shared library: constants, paths, and utilities'
+description: 'Reference for the termux-shared library module — its key classes, constants, and how to add it as a dependency when building a Termux plugin app.'
+---
+
+The `termux-shared` library is a Gradle module inside the `termux-app` repository that centralises every constant, utility class, and shared preference key used by the Termux app and its official plugins. It was introduced in `v0.109` specifically to remove hardcoded paths and strings from both the app and plugin codebases. Any value that could appear in more than one place — a file path, an intent action, a package name — lives here rather than being duplicated.
+
+[![Termux library releases at JitPack](https://jitpack.io/v/termux/termux-app.svg)](https://jitpack.io/#termux/termux-app)
+
+## Key classes
+
+All Termux-specific classes live under the `com.termux.shared.termux` package. General-purpose utilities live outside that package.
+
+| Class | Description |
+|---|---|
+| `TermuxConstants` | All package names, file paths, intent actions, and intent extras for the Termux app and every plugin |
+| `TermuxPropertyConstants` | All `termux.properties` key names and their accepted values and defaults |
+| `TermuxBootstrap` | Bootstrap package variant handling (`apt-android-7` vs `apt-android-5`) |
+| `TermuxUtils` | General utility methods for the Termux app |
+| `TermuxShellManager` | Shell session management and tracking |
+| `TermuxPluginUtils` | Utility methods shared across plugin apps |
+
+## Adding termux-shared as a dependency
+
+The library is published to JitPack from the main `termux/termux-app` repository. Add the JitPack Maven repository and declare the dependency in your plugin project.
+
+<Steps>
+  <Step title="Add the JitPack repository">
+    ```gradle settings.gradle
+    dependencyResolutionManagement {
+        repositories {
+            maven { url 'https://jitpack.io' }
+        }
+    }
+    ```
+  </Step>
+  <Step title="Declare the dependency">
+    ```gradle build.gradle
+    dependencies {
+        implementation 'com.github.termux.termux-app:termux-shared:<version>'
+    }
+    ```
+
+    Replace `<version>` with a release tag (e.g. `v0.118.0`), a specific commit hash, or `-SNAPSHOT` for the latest master snapshot. The current published version from `termux-shared/build.gradle` is `0.118.0`.
+  </Step>
+</Steps>
+
+<Note>
+If you are building against a local checkout of `termux-app`, use composite builds or run `./gradlew publishToMavenLocal` and add `mavenLocal()` to your repositories block instead of using the JitPack coordinate.
+</Note>
+
+## Key constants from TermuxConstants
+
+`TermuxConstants` (version `v0.53.0`) is the single source of truth for package names, paths, and intent strings across the entire Termux ecosystem. Always reference these constants rather than writing string literals.
+
+```java
+// Package name
+TermuxConstants.TERMUX_PACKAGE_NAME          // "com.termux"
+
+// Core file system paths
+TermuxConstants.TERMUX_HOME_DIR_PATH         // "/data/data/com.termux/files/home"
+TermuxConstants.TERMUX_PREFIX_DIR_PATH       // "/data/data/com.termux/files/usr"
+TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH   // "/data/data/com.termux/files/usr/bin"
+
+// termux.properties locations
+TermuxConstants.TERMUX_PROPERTIES_PRIMARY_FILE_PATH
+// "/data/data/com.termux/files/home/.termux/termux.properties"
+
+TermuxConstants.TERMUX_PROPERTIES_SECONDARY_FILE_PATH
+// "/data/data/com.termux/files/home/.config/termux/termux.properties"
+```
+
+### RUN_COMMAND intent
+
+To run commands in Termux from a third-party app or plugin, use the `RUN_COMMAND` intent action constant:
+
+```java
+// Intent action
+TermuxConstants.TERMUX_APP.RUN_COMMAND_SERVICE.ACTION_RUN_COMMAND
+// "com.termux.RUN_COMMAND"
+
+// Common extras (nested inside TERMUX_APP.RUN_COMMAND_SERVICE)
+TermuxConstants.TERMUX_APP.RUN_COMMAND_SERVICE.EXTRA_COMMAND_PATH   // "com.termux.RUN_COMMAND_PATH"
+TermuxConstants.TERMUX_APP.RUN_COMMAND_SERVICE.EXTRA_ARGUMENTS      // "com.termux.RUN_COMMAND_ARGUMENTS"
+TermuxConstants.TERMUX_APP.RUN_COMMAND_SERVICE.EXTRA_STDIN          // "com.termux.RUN_COMMAND_STDIN"
+TermuxConstants.TERMUX_APP.RUN_COMMAND_SERVICE.EXTRA_WORKDIR        // "com.termux.RUN_COMMAND_WORKDIR"
+TermuxConstants.TERMUX_APP.RUN_COMMAND_SERVICE.EXTRA_RUNNER         // "com.termux.RUN_COMMAND_RUNNER"
+TermuxConstants.TERMUX_APP.RUN_COMMAND_SERVICE.EXTRA_BACKGROUND     // "com.termux.RUN_COMMAND_BACKGROUND" (deprecated)
+```
+
+### Plugin package names
+
+```java
+TermuxConstants.TERMUX_API_PACKAGE_NAME      // "com.termux.api"
+TermuxConstants.TERMUX_BOOT_PACKAGE_NAME     // "com.termux.boot"
+TermuxConstants.TERMUX_FLOAT_PACKAGE_NAME    // "com.termux.window"
+TermuxConstants.TERMUX_STYLING_PACKAGE_NAME  // "com.termux.styling"
+TermuxConstants.TERMUX_TASKER_PACKAGE_NAME   // "com.termux.tasker"
+TermuxConstants.TERMUX_WIDGET_PACKAGE_NAME   // "com.termux.widget"
+```
+
+## Forking and local development
+
+If you are forking Termux or developing a plugin against a modified version of `termux-shared`, avoid publishing intermediate versions to JitPack. Instead, use one of the following approaches:
+
+<Tabs>
+  <Tab title="Local Maven publishing">
+    ```bash
+    # In the termux-app checkout
+    ./gradlew :termux-shared:publishToMavenLocal
+    ```
+
+    Then add `mavenLocal()` to your plugin's repositories block. This is the simplest approach for rapid iteration.
+  </Tab>
+  <Tab title="Composite build">
+    In your plugin's `settings.gradle`, include the `termux-app` checkout as a composite build:
+
+    ```gradle settings.gradle
+    includeBuild('../termux-app') {
+        dependencySubstitution {
+            substitute module('com.github.termux.termux-app:termux-shared') using project(':termux-shared')
+        }
+    }
+    ```
+
+    Gradle will substitute the JitPack artifact with the local project module automatically.
+  </Tab>
+</Tabs>
+
+For more details, see the [Forking and Local Development](https://github.com/termux/termux-app/wiki/Termux-Libraries#forking-and-local-development) wiki page.
+
+<Note>
+Always use `TermuxConstants` constants rather than hardcoding strings. Hardcoded values such as `"com.termux"` or `"/data/data/com.termux/files/usr"` in pull requests will not be accepted.
+</Note>

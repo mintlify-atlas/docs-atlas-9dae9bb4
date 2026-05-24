@@ -1,0 +1,109 @@
+---
+title: "Termux:Boot — run scripts automatically on device boot"
+description: "Termux:Boot executes shell scripts in ~/.termux/boot/ each time the Android device boots, letting you start SSH, cron, and other services automatically."
+---
+
+Termux:Boot lets you run shell scripts automatically whenever your Android device starts up. Place executable scripts in `~/.termux/boot/` and they will be executed in the background each time the device completes its boot sequence. This is useful for starting SSH daemons, launching background services, or running any initialization logic your workflow depends on.
+
+## How it works
+
+Termux:Boot registers an Android `BOOT_COMPLETED` broadcast receiver. When the device finishes booting, Android sends this broadcast and Termux:Boot wakes up, then executes each script found in `~/.termux/boot/` in alphabetical order. Scripts run inside the Termux environment with access to all installed packages.
+
+The main Termux app does **not** need to be open for boot scripts to run — Termux:Boot starts the Termux runtime in the background.
+
+## Installation and setup
+
+<Steps>
+  <Step title="Install the Termux:Boot APK">
+    Download the APK from the same source as your Termux app (F-Droid or GitHub). Install it on your device.
+  </Step>
+  <Step title="Open Termux:Boot once">
+    Launch the Termux:Boot app from your app drawer at least once. This step registers the boot receiver with Android — without it, the app will not run scripts on boot.
+  </Step>
+  <Step title="Create the boot scripts directory">
+    In the Termux terminal, create the directory where boot scripts will live:
+
+    ```bash
+    mkdir -p ~/.termux/boot
+    ```
+  </Step>
+  <Step title="Create a boot script">
+    Write a script and make it executable:
+
+    ```bash
+    cat > ~/.termux/boot/start-services.sh << 'EOF'
+    #!/data/data/com.termux/files/usr/bin/bash
+    sshd
+    EOF
+    chmod +x ~/.termux/boot/start-services.sh
+    ```
+  </Step>
+  <Step title="Reboot to test">
+    Restart your device. After boot completes, your script should have run in the background.
+  </Step>
+</Steps>
+
+## Writing boot scripts
+
+Boot scripts run in a non-interactive background environment. Keep the following in mind:
+
+**Use the full Termux shebang path.** Android does not have `/bin/bash`. Scripts must reference the Termux binary path:
+
+```bash
+#!/data/data/com.termux/files/usr/bin/bash
+```
+
+**Use `nohup` for long-running processes.** Scripts run synchronously during boot. If a process does not exit on its own, use `nohup` to detach it:
+
+```bash
+#!/data/data/com.termux/files/usr/bin/bash
+nohup sshd &
+nohup crond &
+```
+
+**Use a session manager for interactive processes.** If you need a process that can be attached to later, start it under `tmux` or `screen`:
+
+```bash
+#!/data/data/com.termux/files/usr/bin/bash
+tmux new-session -d -s main
+```
+
+## Example: start SSH and a cron daemon on boot
+
+```bash
+mkdir -p ~/.termux/boot
+
+cat > ~/.termux/boot/start-services.sh << 'EOF'
+#!/data/data/com.termux/files/usr/bin/bash
+# Start SSH daemon
+sshd
+
+# Start cron daemon
+crond
+EOF
+
+chmod +x ~/.termux/boot/start-services.sh
+```
+
+## Multiple scripts
+
+You can place multiple scripts in `~/.termux/boot/`. They are executed in alphabetical order by filename. Use numeric prefixes to control execution order:
+
+```
+~/.termux/boot/
+  01-environment.sh
+  02-networking.sh
+  03-services.sh
+```
+
+<Warning>
+Scripts that block (such as an interactive shell or a process that does not background itself) will prevent subsequent boot scripts from running. Always background long-running processes with `&` or `nohup`.
+</Warning>
+
+<Note>
+Android may kill background processes to reclaim memory. For critical services, consider disabling battery optimization for Termux via **Android Settings → Battery → Termux → Unrestricted**.
+</Note>
+
+## Source code
+
+The Termux:Boot source is available at [github.com/termux/termux-boot](https://github.com/termux/termux-boot).

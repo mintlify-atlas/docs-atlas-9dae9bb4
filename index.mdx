@@ -1,133 +1,61 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
-icon: 'star'
+title: "Termux: Android Terminal Emulator and Linux Environment"
+description: "Termux brings a full Linux terminal to Android. Install packages, run scripts, and build a powerful development environment on your phone or tablet."
 ---
 
-## Setting up
+Termux is a free, open-source Android terminal emulator that provides a complete Linux environment without requiring root access. It ships with a working shell, a package manager (apt/pkg), and access to thousands of packages — from Python and Node.js to git, vim, and SSH — all running directly on your Android device.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Get Termux on your device via F-Droid or GitHub releases
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Install packages and start your first terminal session
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Configuration" icon="sliders" href="/configuration/termux-properties">
+    Customize keyboard shortcuts, terminal appearance, and behavior
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Plugin Ecosystem" icon="puzzle-piece" href="/plugins/overview">
+    Extend Termux with API access, boot scripts, widgets, and more
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## What you can do with Termux
 
-Everything you need to create world-class documentation.
+Termux is more than a terminal — it's a full Linux development environment in your pocket. You can run development servers, write and execute scripts, connect to remote servers over SSH, manage files, and automate tasks directly from your Android device.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={2}>
+  <Card title="Package management" icon="box" href="/using-termux/package-management">
+    Install and manage thousands of Linux packages with apt and pkg
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="Terminal basics" icon="terminal" href="/using-termux/terminal-basics">
+    Sessions, gestures, text selection, and navigation
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="Keyboard shortcuts" icon="keyboard" href="/using-termux/keyboard-shortcuts">
+    Hardware keyboard support, extra keys, and key combinations
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
+  <Card title="Storage access" icon="folder-open" href="/using-termux/storage-access">
+    Access Android shared storage, downloads, and other apps' files
   </Card>
-</Columns>
+</CardGroup>
 
-## Make your content agent ready
+## Advanced integrations
 
-Make your docs work for humans and AI agents alike.
+<CardGroup cols={2}>
+  <Card title="RUN_COMMAND intent" icon="code" href="/advanced/run-command-intent">
+    Trigger Termux commands from other Android apps via intents
+  </Card>
+  <Card title="Android integration" icon="mobile" href="/advanced/android-integration">
+    File sharing, document provider, and system permissions
+  </Card>
+  <Card title="Debugging" icon="bug" href="/advanced/debugging">
+    Collect logs and report issues effectively
+  </Card>
+  <Card title="Building from source" icon="hammer" href="/development/building">
+    Build and develop Termux yourself
+  </Card>
+</CardGroup>
 
-<Columns cols={2}>
-  <Card
-    title="Prompt component"
-    icon="robot"
-    href="/agent-ready/prompt"
-  >
-    Embed shareable AI prompts readers can copy or open in Cursor.
-  </Card>
-  <Card
-    title="Visibility"
-    icon="eye"
-    href="/agent-ready/visibility"
-  >
-    Show different content to humans and agents reading your docs.
-  </Card>
-  <Card
-    title="Contextual menu"
-    icon="bolt"
-    href="/agent-ready/contextual"
-  >
-    Give readers one-click access to Claude, ChatGPT, Cursor, and more.
-  </Card>
-  <Card
-    title="AI coding tools"
-    icon="wand-magic-sparkles"
-    href="/ai-tools/claude-code"
-  >
-    Set up Claude Code, Cursor, or Windsurf with Mintlify's skill.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Note>
+  Install Termux from **F-Droid** or **GitHub Releases** for the best experience. The Google Play version is experimental and has known limitations. Never mix APKs from different sources — they use different signing keys.
+</Note>

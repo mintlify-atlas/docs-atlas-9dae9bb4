@@ -1,0 +1,121 @@
+---
+title: "Forking Termux: custom package name and build setup"
+description: "What to change when forking Termux: updating TermuxConstants and build.gradle, rebuilding bootstrap archives, patching plugins, and using termux-shared."
+---
+
+Forking Termux lets you distribute a customised terminal app under your own package name and branding. Because Termux has hardcoded filesystem paths derived from its package name (`com.termux`), forking requires coordinated changes across the app source, the build system, and the bootstrap archive that supplies the initial Linux environment. This page walks through every required change.
+
+<Warning>
+Do not distribute a fork under the `com.termux` package name or using the official Termux signing keys. Doing so would make your APK installable as an update over the legitimate Termux app, which is a serious security risk for users. Always use a unique package name for any fork you distribute publicly.
+</Warning>
+
+## Why forking requires more than renaming the package
+
+Termux binaries compiled for the bootstrap are built with `$PREFIX` (`/data/data/com.termux/files/usr`) **hardcoded at compile time**. Dynamic linker paths, shebang lines, and many other binary-level values reference this exact path. If you change the package name to `com.example.terminal`, the prefix path becomes `/data/data/com.example.terminal/files/usr` and all pre-built binaries from the official bootstrap will fail to load or execute.
+
+This means forking requires rebuilding the bootstrap zip from source against the new prefix path.
+
+## Key constants to update
+
+The [`TermuxConstants`](https://github.com/termux/termux-app/blob/master/termux-shared/src/main/java/com/termux/shared/termux/TermuxConstants.java) class is the single source of truth for paths and identifiers used throughout Termux and all its plugins. The javadoc at the top of that file describes exactly which values must change.
+
+The most important fields are:
+
+```java
+// termux-shared/src/main/java/com/termux/shared/termux/TermuxConstants.java
+
+/** Termux app package name — change this to your fork's package name */
+public static final String TERMUX_PACKAGE_NAME = "com.termux";
+// All path constants below are derived from this value:
+
+/** $HOME directory: /data/data/<PACKAGE>/files/home */
+public static final String TERMUX_HOME_DIR_PATH =
+    TERMUX_FILES_DIR_PATH + "/home";
+
+/** $PREFIX directory: /data/data/<PACKAGE>/files/usr */
+public static final String TERMUX_PREFIX_DIR_PATH =
+    TERMUX_FILES_DIR_PATH + "/usr";
+```
+
+Because `TERMUX_HOME_DIR_PATH` and `TERMUX_PREFIX_DIR_PATH` are derived from `TERMUX_PACKAGE_NAME`, updating `TERMUX_PACKAGE_NAME` automatically propagates the correct paths everywhere in the Java/Kotlin codebase — provided you do not have any hardcoded strings elsewhere.
+
+## Full list of required changes
+
+<Steps>
+  <Step title="Update TERMUX_PACKAGE_NAME in TermuxConstants.java">
+    Change `TERMUX_PACKAGE_NAME` to your fork's package name. All path constants (`TERMUX_HOME_DIR_PATH`, `TERMUX_PREFIX_DIR_PATH`, `TERMUX_FILES_DIR_PATH`, etc.) are computed from this value and will update automatically.
+
+    ```java
+    // Before
+    public static final String TERMUX_PACKAGE_NAME = "com.termux";
+
+    // After
+    public static final String TERMUX_PACKAGE_NAME = "com.example.terminal";
+    ```
+  </Step>
+  <Step title="Update applicationId in build.gradle">
+    In `app/build.gradle`, change the `applicationId` to match:
+
+    ```groovy
+    android {
+        defaultConfig {
+            applicationId "com.example.terminal"
+        }
+    }
+    ```
+
+    Also update the `manifestPlaceholders` that supply `TERMUX_PACKAGE_NAME` and `*_APP_NAME` values to the manifest template.
+  </Step>
+  <Step title="Update strings.xml and shortcut.xml">
+    These XML resource files cannot use dynamic/computed values, so any references to `com.termux` must be changed manually in:
+    - `app/src/main/res/values/strings.xml`
+    - `app/src/main/res/xml/shortcut.xml`
+    - `termux-shared/src/main/res/values/strings.xml`
+  </Step>
+  <Step title="Update sharedUserId in AndroidManifest.xml">
+    The `android:sharedUserId` in `app/src/main/AndroidManifest.xml` is currently set to `${TERMUX_PACKAGE_NAME}` via a manifest placeholder. Ensure the placeholder resolves to your new package name. All plugin APKs you fork must use the same `sharedUserId` to share a UID.
+  </Step>
+  <Step title="Rebuild the bootstrap zip for the new prefix">
+    Clone [termux-packages](https://github.com/termux/termux-packages) and build bootstrap archives targeting your new prefix path. The full instructions are in the [Building Packages wiki](https://github.com/termux/termux-packages/wiki/Building-packages) and the [bootstrap archives section](https://github.com/termux/termux-packages/wiki/For-maintainers#build-bootstrap-archives).
+
+    The compiled prefix path is the main reason you cannot reuse official Termux bootstrap zips in a fork with a different package name.
+  </Step>
+  <Step title="Patch plugins that have hardcoded com.termux values">
+    Not all plugin apps use `TermuxConstants` from the `termux-shared` library consistently. Check each plugin for hardcoded `"com.termux"` strings in intents, permissions, and content provider authorities, and replace them with your package name.
+
+    For guidance on updating plugins to use `termux-shared`, see [Forking and Local Development](https://github.com/termux/termux-app/wiki/Termux-Libraries#forking-and-local-development).
+  </Step>
+</Steps>
+
+## The termux-shared library
+
+The `termux-shared` library was introduced in Termux v0.109. It centralises all shared constants (paths, intent actions, permission names, notification IDs) so that the app and every plugin reference a single authoritative source rather than maintaining independent copies of hardcoded strings.
+
+When forking:
+- Import `termux-shared` as a local module or via [JitPack](https://jitpack.io/#termux/termux-app) and modify `TermuxConstants` before building.
+- Ensure all plugin forks depend on your modified copy of `termux-shared`, not the upstream version.
+- Do not submit pull requests to upstream that hardcode values — the Termux project requires all constants to go through `TermuxConstants`.
+
+## Building bootstrap archives
+
+The bootstrap zip is the minimal package set shipped inside the Termux APK that bootstraps the Linux environment on first launch. It is not the same as packages installed later via `apt`/`pkg`.
+
+To build bootstrap archives for a custom prefix:
+
+```bash
+# In a clone of termux-packages
+./scripts/run-docker.sh ./scripts/build-bootstraps.sh \
+  --prefix /data/data/com.example.terminal/files/usr
+```
+
+Reference links:
+- [Building packages](https://github.com/termux/termux-packages/wiki/Building-packages)
+- [Build bootstrap archives](https://github.com/termux/termux-packages/wiki/For-maintainers#build-bootstrap-archives)
+
+<Tip>
+The compiled prefix path is baked into ELF binaries as the dynamic linker path and into scripts as shebang lines. If you later want to rename your package again, you will need to rebuild the bootstrap a second time — there is no way to patch this at runtime.
+</Tip>
+
+## Versioning your fork
+
+Follow the [semantic versioning 2.0.0 spec](https://semver.org/spec/v2.0.0.html) in the format `major.minor.patch` for all `versionName` values in `build.gradle` files. The Termux build system validates this format and rejects builds that do not comply.

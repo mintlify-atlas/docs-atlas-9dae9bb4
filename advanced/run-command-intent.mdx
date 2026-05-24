@@ -1,0 +1,251 @@
+---
+title: "RUN_COMMAND intent: trigger commands from Android apps"
+description: "Send intents from any Android app to execute commands inside Termux, covering required permissions, all intent extras, session actions, and ADB usage."
+---
+
+The `RUN_COMMAND` intent API lets any Android app start commands inside Termux without building a full terminal integration. Your app sends a structured intent to `RunCommandService`, which validates it, checks permissions, and forwards it to the core `TermuxService` for execution in either a foreground terminal session or a background shell.
+
+## Prerequisites
+
+Before sending any intent, two conditions must both be satisfied:
+
+<Steps>
+  <Step title="Enable external apps in termux.properties">
+    Open (or create) `~/.termux/termux.properties` and add the following line:
+
+    ```properties
+    allow-external-apps = true
+    ```
+
+    The secondary location `~/.config/termux/termux.properties` is also checked. Without this property set to `true`, Termux will reject all incoming `RUN_COMMAND` intents and show a notification warning that an external app attempted access.
+  </Step>
+  <Step title="Declare and request the RUN_COMMAND permission">
+    In your calling app's `AndroidManifest.xml`, declare that you need the permission:
+
+    ```xml
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
+    ```
+
+    Then request it at runtime (it has `protectionLevel="dangerous"`):
+
+    ```kotlin
+    ActivityCompat.requestPermissions(
+        this,
+        arrayOf("com.termux.permission.RUN_COMMAND"),
+        REQUEST_CODE
+    )
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+The `com.termux.permission.RUN_COMMAND` permission is declared with `android:protectionLevel="dangerous"`. The user must explicitly grant it to your app through the Android runtime permission dialog. If the permission is not granted and `allow-external-apps` is not `true`, Termux will forcibly show a notification so the user knows an external app attempted to run a command.
+</Warning>
+
+## Service and action
+
+| Item | Value |
+|---|---|
+| Service class | `com.termux.app.RunCommandService` |
+| Package | `com.termux` |
+| Intent action | `com.termux.RUN_COMMAND` |
+
+## Intent extras reference
+
+<ParamField body="com.termux.RUN_COMMAND_PATH" type="String" required>
+  Absolute path to the executable or script to run. Must be a regular, readable, executable file. Symlinks are supported — if the path is a symlink (e.g., a busybox/coreutils applet), the symlink path is used directly so that arguments are dispatched correctly.
+
+  Example: `/data/data/com.termux/files/usr/bin/bash`
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_ARGUMENTS" type="String[]">
+  Array of arguments to pass to the executable. When sending via the `am` shell command, commas delimit array elements. If an argument itself contains a comma, use the comma alternative character (U+201A `‚`) and set `com.termux.RUN_COMMAND_REPLACE_COMMA_ALTERNATIVE_CHARS_IN_ARGUMENTS` to `true`.
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_STDIN" type="String">
+  Data to pass to the command on standard input.
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_WORKDIR" type="String">
+  Working directory for the command. Defaults to `$HOME` (`/data/data/com.termux/files/home`) when not set. The directory must exist and be readable and writable; Termux will attempt to create it if it falls under an allowed Termux path.
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_BACKGROUND" type="boolean" deprecated>
+  When `true`, run the command as a background app shell instead of a foreground terminal session. **Deprecated** — prefer `com.termux.RUN_COMMAND_RUNNER` instead.
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_RUNNER" type="String">
+  Explicit runner selection. Use `"app"` for a background app shell or `"terminal-session"` for a foreground terminal session. Takes precedence over `RUN_COMMAND_BACKGROUND` when present.
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_SESSION_ACTION" type="String">
+  Controls how a foreground terminal session is displayed. Only applies when the command runs in a terminal session (not background). See [Session action values](#session-action-values) below.
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_SHELL_NAME" type="String">
+  Optional name to assign to the shell session, visible in the Termux session list.
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_COMMAND_LABEL" type="String">
+  Human-readable label for this execution command. Shown in error notifications. Defaults to `"RUN_COMMAND Execution Intent Command"`.
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_COMMAND_DESCRIPTION" type="String">
+  Markdown-formatted description of what the command does. Shown in error notifications and reports.
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_PENDING_INTENT" type="PendingIntent">
+  A `PendingIntent` that Termux will fire with the execution result once the command completes. The result is delivered in a `Bundle` extra named `"result"` containing:
+
+  | Key | Type | Description |
+  |---|---|---|
+  | `stdout` | String | Standard output |
+  | `stderr` | String | Standard error |
+  | `exitCode` | int | Process exit code |
+  | `err` | int | Internal error code (0 = success) |
+  | `errmsg` | String | Internal error message |
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_RESULT_DIRECTORY" type="String">
+  Directory path where result files should be written. When set, Termux writes output files to this directory instead of (or in addition to) delivering a `PendingIntent`.
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_REPLACE_COMMA_ALTERNATIVE_CHARS_IN_ARGUMENTS" type="boolean">
+  When `true`, Termux replaces all occurrences of the comma-alternative character (U+201A `‚`, or the custom character specified by `RUN_COMMAND_COMMA_ALTERNATIVE_CHARS_IN_ARGUMENTS`) with normal commas in each argument string. Useful when sending comma-containing arguments via `am`.
+</ParamField>
+
+<ParamField body="com.termux.RUN_COMMAND_COMMA_ALTERNATIVE_CHARS_IN_ARGUMENTS" type="String">
+  Custom character(s) to use as the comma alternative when `RUN_COMMAND_REPLACE_COMMA_ALTERNATIVE_CHARS_IN_ARGUMENTS` is `true`. Defaults to U+201A `‚` if not set.
+</ParamField>
+
+## Session action values
+
+The `com.termux.RUN_COMMAND_SESSION_ACTION` extra accepts a string representation of an integer:
+
+| Value | Constant | Behaviour |
+|---|---|---|
+| `"0"` | `SWITCH_TO_NEW_SESSION_AND_OPEN_ACTIVITY` | Make the new session current and open `TermuxActivity` if it is not already running. |
+| `"1"` | `KEEP_CURRENT_SESSION_AND_OPEN_ACTIVITY` | Keep the existing session current and open `TermuxActivity` if it is not already running. The new session appears in the left sidebar. |
+| `"2"` | `SWITCH_TO_NEW_SESSION_AND_DONT_OPEN_ACTIVITY` | Make the new session current but do not open `TermuxActivity`. Sessions are accessible from the Termux notification. If `TermuxActivity` is already running, behaves like `1`. |
+| `"3"` | `KEEP_CURRENT_SESSION_AND_DONT_OPEN_ACTIVITY` | Keep the existing session current and do not open `TermuxActivity`. Sessions are accessible from the Termux notification. If `TermuxActivity` is already running, behaves like `1`. |
+
+## Java / Kotlin example
+
+<Tabs>
+  <Tab title="Java">
+    ```java
+    Intent intent = new Intent();
+    intent.setClassName("com.termux", "com.termux.app.RunCommandService");
+    intent.setAction("com.termux.RUN_COMMAND");
+    intent.putExtra("com.termux.RUN_COMMAND_PATH",
+        "/data/data/com.termux/files/usr/bin/bash");
+    intent.putExtra("com.termux.RUN_COMMAND_ARGUMENTS",
+        new String[]{"-c", "echo hello > /sdcard/output.txt"});
+    intent.putExtra("com.termux.RUN_COMMAND_WORKDIR",
+        "/data/data/com.termux/files/home");
+    intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", false);
+    intent.putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0");
+
+    // Android 8+ requires startForegroundService for foreground-capable services
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        startForegroundService(intent);
+    } else {
+        startService(intent);
+    }
+    ```
+  </Tab>
+  <Tab title="Kotlin">
+    ```kotlin
+    val intent = Intent().apply {
+        setClassName("com.termux", "com.termux.app.RunCommandService")
+        action = "com.termux.RUN_COMMAND"
+        putExtra("com.termux.RUN_COMMAND_PATH",
+            "/data/data/com.termux/files/usr/bin/bash")
+        putExtra("com.termux.RUN_COMMAND_ARGUMENTS",
+            arrayOf("-c", "echo hello > /sdcard/output.txt"))
+        putExtra("com.termux.RUN_COMMAND_WORKDIR",
+            "/data/data/com.termux/files/home")
+        putExtra("com.termux.RUN_COMMAND_BACKGROUND", false)
+        putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0")
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        startForegroundService(intent)
+    } else {
+        startService(intent)
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Receiving results via PendingIntent
+
+To get stdout, stderr, and the exit code back in your app, create a `PendingIntent` pointing at a `BroadcastReceiver`:
+
+```kotlin
+val resultIntent = Intent(this, MyResultReceiver::class.java)
+val pendingIntent = PendingIntent.getBroadcast(
+    this, 0, resultIntent,
+    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+)
+
+intent.putExtra("com.termux.RUN_COMMAND_PENDING_INTENT", pendingIntent)
+```
+
+In your `BroadcastReceiver`:
+
+```kotlin
+class MyResultReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val bundle = intent.getBundleExtra("result") ?: return
+        val stdout   = bundle.getString("stdout", "")
+        val stderr   = bundle.getString("stderr", "")
+        val exitCode = bundle.getInt("exitCode", -1)
+        val err      = bundle.getInt("err", 0)
+    }
+}
+```
+
+## ADB / `am` command usage
+
+You can trigger `RUN_COMMAND` intents from a connected PC or from a root shell using Android's `am` tool:
+
+```bash
+am startservice --user 0 \
+  -n com.termux/com.termux.app.RunCommandService \
+  -a com.termux.RUN_COMMAND \
+  --es com.termux.RUN_COMMAND_PATH '/data/data/com.termux/files/usr/bin/bash' \
+  --esa com.termux.RUN_COMMAND_ARGUMENTS '-c,echo hello' \
+  --ez com.termux.RUN_COMMAND_BACKGROUND false \
+  --es com.termux.RUN_COMMAND_SESSION_ACTION 0
+```
+
+<Note>
+The `--esa` flag passes a comma-separated list as a `String[]`. If any individual argument contains a literal comma, replace it with the alternative comma character (U+201A `‚`) and add `--ez com.termux.RUN_COMMAND_REPLACE_COMMA_ALTERNATIVE_CHARS_IN_ARGUMENTS true` to your `am` command.
+</Note>
+
+Running a background command silently:
+
+```bash
+am startservice --user 0 \
+  -n com.termux/com.termux.app.RunCommandService \
+  -a com.termux.RUN_COMMAND \
+  --es com.termux.RUN_COMMAND_PATH '/data/data/com.termux/files/usr/bin/python3' \
+  --esa com.termux.RUN_COMMAND_ARGUMENTS '/data/data/com.termux/files/home/script.py' \
+  --es com.termux.RUN_COMMAND_RUNNER 'app'
+```
+
+## How it works internally
+
+When `RunCommandService` receives a valid intent it:
+
+1. Verifies the `com.termux.RUN_COMMAND` action is present.
+2. Checks that `allow-external-apps = true` is set in `termux.properties`.
+3. Validates the executable path (must be a regular, readable, executable file).
+4. Resolves symlinks but preserves the original path for busybox/coreutils applets so arguments are dispatched to the applet rather than the underlying binary.
+5. Forwards a new intent to `TermuxService` with action `com.termux.service_execute`.
+6. Stops itself immediately (`START_NOT_STICKY`) — `RunCommandService` is a pass-through and does not remain running.
+
+<Info>
+The full API reference and additional examples are maintained at the [RUN_COMMAND Intent wiki page](https://github.com/termux/termux-app/wiki/RUN_COMMAND-Intent).
+</Info>

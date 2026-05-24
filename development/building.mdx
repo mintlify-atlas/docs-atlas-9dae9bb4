@@ -1,0 +1,126 @@
+---
+title: 'Building Termux from Source (Android Studio Guide)'
+description: 'Set up your environment, clone the repository, select a package variant, and compile debug or release APKs for the Termux Android terminal emulator.'
+---
+
+Building Termux from source gives you full control over the app binary, lets you test pull requests before they land in a release, and is required if you want to change the package name for a fork. The project uses a standard Android Gradle build; if you have used Android Studio before, most of the setup will be familiar.
+
+## Prerequisites
+
+Before cloning the repository, make sure the following tools are installed and available on your `PATH`.
+
+| Requirement | Version / notes |
+|---|---|
+| Android Studio | Latest stable channel |
+| Android NDK | `29.0.14206865` — set via `ndkVersion` in `gradle.properties` |
+| JDK | Java 8 compatible (`sourceCompatibility JavaVersion.VERSION_1_8` in `app/build.gradle`) |
+| Git | Any recent version |
+
+<Info>
+Android Studio bundles its own JDK. If you rely on that bundled JDK, you do not need a separate Java installation. The NDK can be installed from **SDK Manager → SDK Tools → NDK (Side by side)**.
+</Info>
+
+## Project structure
+
+The repository is a multi-module Gradle project. The modules are declared in `settings.gradle`:
+
+```
+include ':app', ':termux-shared', ':terminal-emulator', ':terminal-view'
+```
+
+| Module | Description |
+|---|---|
+| `:app` | Main Termux application |
+| `:terminal-emulator` | Terminal emulation library (VT/xterm state machine) |
+| `:terminal-view` | Android `View` that renders the terminal on screen |
+| `:termux-shared` | Shared constants and utilities used by the app and all plugins |
+
+## Building
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/termux/termux-app
+    cd termux-app
+    ```
+  </Step>
+  <Step title="Open in Android Studio">
+    Use **File → Open** and select the cloned directory. Android Studio detects the Gradle project and syncs dependencies automatically. Wait for the initial sync to finish before proceeding.
+  </Step>
+  <Step title="Build the APK">
+    You can trigger builds from Android Studio or from the command line.
+
+    ```bash
+    # Debug build — uses the default apt-android-7 package variant
+    ./gradlew assembleDebug
+
+    # Release build
+    ./gradlew assembleRelease
+
+    # Debug build with an explicit package variant
+    TERMUX_PACKAGE_VARIANT=apt-android-7 ./gradlew assembleDebug
+    ```
+  </Step>
+</Steps>
+
+## Package variants
+
+The `TERMUX_PACKAGE_VARIANT` environment variable (or the `packageVariant` property in `app/build.gradle`) controls which bootstrap is embedded in the APK. The supported values are:
+
+| Variant | Target Android version | Notes |
+|---|---|---|
+| `apt-android-7` *(default)* | Android 7+ | Recommended for all modern devices; full package update support |
+| `apt-android-5` | Android 5 and 6 | No package update support; legacy use only |
+
+<Warning>
+A bootstrap of a different variant must not be manually installed by replacing `$PREFIX` after the APK is installed. The app code is compiled against a specific variant and will crash at startup if the bootstrap does not match.
+</Warning>
+
+## Bootstrap packages
+
+During the Gradle build the `downloadBootstraps` task automatically fetches bootstrap zip archives from the [`termux/termux-packages`](https://github.com/termux/termux-packages/releases) release page. The exact version and SHA-256 checksums are hardcoded in `app/build.gradle`.
+
+Current bootstrap versions embedded in `app/build.gradle`:
+
+- **apt-android-7**: `2026.02.12-r1+apt.android-7`
+- **apt-android-5**: `2022.04.28-r6+apt-android-5`
+
+The bootstrap zip archives are downloaded to `app/src/main/cpp/bootstrap-<arch>.zip`. Running `./gradlew clean` deletes the cached zips. The bootstrap contains the minimal shell environment — bash, apt, and core utilities — needed to start a working Termux session.
+
+## APK outputs
+
+After a successful build, APKs are written to `app/build/outputs/apk/`. Debug builds go into the `debug/` subdirectory; release builds into `release/`. The output file names follow the pattern:
+
+```
+termux-app_apt-android-7-debug_universal.apk
+termux-app_apt-android-7-debug_arm64-v8a.apk
+termux-app_apt-android-7-debug_armeabi-v7a.apk
+termux-app_apt-android-7-debug_x86.apk
+termux-app_apt-android-7-debug_x86_64.apk
+```
+
+By default, debug builds produce architecture-specific APKs in addition to the universal APK. Release builds produce only the universal APK (F-Droid does not support split APKs).
+
+## Using JitPack for library development
+
+If you only need the `termux-shared` library or the terminal libraries as dependencies of another app, they are published to JitPack from the main repository. Add the JitPack repository to your project and declare the dependency:
+
+```gradle settings.gradle
+dependencyResolutionManagement {
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
+
+```gradle build.gradle
+dependencies {
+    implementation 'com.github.termux.termux-app:termux-shared:<version>'
+}
+```
+
+Replace `<version>` with a release tag such as `v0.118.0`, a commit hash, or `-SNAPSHOT` for the latest master build.
+
+<Note>
+For local development against a checked-out copy of `termux-app`, use Gradle composite builds or local Maven publishing (`./gradlew publishToMavenLocal`) instead of the JitPack coordinate.
+</Note>
